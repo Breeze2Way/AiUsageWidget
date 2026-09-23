@@ -7,100 +7,69 @@ namespace AiUsageWidget.Tests;
 public sealed class AiUsageTooltipFormatterTests
 {
     [Fact]
-    public void FormatsChineseUsageBlocksInTheRequestedCompactLayout()
+    public void FormatsTheCompleteChineseTooltipInTheRequestedCompactLayout()
     {
         var refreshedAt = new DateTimeOffset(2026, 9, 23, 13, 59, 25, TimeSpan.FromHours(8));
-        var antigravity = CreateAntigravityState(refreshedAt);
-        var codex = CreateCodexState(refreshedAt);
 
         var details = AiUsageTooltipFormatter.FormatDetails(
-            antigravity,
-            codex,
-            refreshedAt,
+            CreateAntigravityState(refreshedAt),
+            CreateCodexState(refreshedAt),
+            new DateTimeOffset(2026, 9, 23, 14, 0, 0, TimeSpan.FromHours(8)),
             english: false);
 
         Assert.Equal(
             string.Join(Environment.NewLine,
-                "Antigravity : 7.1M[昨日:125.6M，7天:169.4M，30天1175.5M]",
-                "     Gemini : [5h:92.8%][周:33.6%]",
-                "     Claude : [5h:100%][周:19.1%]",
+                "Gemini [5h : 92.8%] [周 : 33.6%]",
+                "Claude [5h : 100%] [周 : 19.1%]",
+                "用量 : 7.1M [昨日:125.6M  7天:169.4M  30天1175.5M]",
+                "重置 : 09-23 15:21:00 [余1h]   Week :09-24 10:15:00 [余20h]",
                 string.Empty,
-                "Codex : 29.1M[昨日:73.7M，7天:169.4M，30天1175.5M]",
-                "      Codex : [5h:95%][周:23%]"),
+                "Codex [5h : 95%] [周 : 23%]",
+                "用量 : 29.1M [昨日:73.7M, 7天:169.4M, 30天1175.5M]",
+                "重置 : 09-23 15:54:00 [余1h]   Week :09-27 09:29:00 [余91h]",
+                string.Empty,
+                "2026-09-23 13:59:25"),
             details);
     }
 
     [Fact]
-    public void FormatsChineseResetTimesWithTheUpdateTimeInTheHeading()
+    public void FormatsEnglishRowsWithoutChineseText()
     {
         var refreshedAt = new DateTimeOffset(2026, 9, 23, 13, 59, 25, TimeSpan.FromHours(8));
-        var now = new DateTimeOffset(2026, 9, 23, 14, 0, 0, TimeSpan.FromHours(8));
-        var antigravity = CreateAntigravityState(refreshedAt);
-        var codex = CreateCodexState(refreshedAt);
-
-        var details = AiUsageTooltipFormatter.FormatResetDetails(
-            antigravity,
-            codex,
-            now,
-            english: false);
-
-        Assert.Equal(
-            string.Join(Environment.NewLine,
-                "重置时间[2026-09-23 13:59:25更新]:",
-                "Antigravity 5H:09-23 15:21:00 [余1h]  Week : 09-24 10:15:00 [余20h]",
-                "Codex       5H:09-23 15:54:00 [余1h]  Week : 09-27 09:29:00 [余91h]"),
-            details);
-    }
-
-    [Fact]
-    public void FormatsEnglishUsageAndResetLabelsWithoutChineseText()
-    {
-        var refreshedAt = new DateTimeOffset(2026, 9, 23, 13, 59, 25, TimeSpan.FromHours(8));
-        var antigravity = CreateAntigravityState(refreshedAt);
-        var codex = CreateCodexState(refreshedAt);
 
         var details = AiUsageTooltipFormatter.FormatDetails(
-            antigravity,
-            codex,
-            refreshedAt,
-            english: true);
-        var resets = AiUsageTooltipFormatter.FormatResetDetails(
-            antigravity,
-            codex,
+            CreateAntigravityState(refreshedAt),
+            CreateCodexState(refreshedAt),
             new DateTimeOffset(2026, 9, 23, 14, 0, 0, TimeSpan.FromHours(8)),
             english: true);
 
-        Assert.Contains("[Yesterday:125.6M, 7 days:169.4M, 30 days:1175.5M]", details);
-        Assert.Contains("[5h:92.8%][Week:33.6%]", details);
+        Assert.Contains("Gemini [5h : 92.8%] [Week : 33.6%]", details);
+        Assert.Contains("Usage : 7.1M [Yesterday:125.6M  7 days:169.4M  30 days:1175.5M]", details);
+        Assert.Contains("Reset : 09-23 15:21:00 [1h left]   Week :09-24 10:15:00 [20h left]", details);
+        Assert.EndsWith("2026-09-23 13:59:25", details);
         Assert.DoesNotContain("昨日", details);
-        Assert.Contains("Reset times [updated 2026-09-23 13:59:25]:", resets);
-        Assert.Contains("[1h left]", resets);
-        Assert.DoesNotContain("重置", resets);
+        Assert.DoesNotContain("重置", details);
     }
 
     [Fact]
-    public void KeepsProviderNamesWhenOnlyWeeklyResetTimesAreAvailable()
+    public void KeepsTheRemainingResetPeriodWhenFiveHourResetIsUnavailable()
     {
         var refreshedAt = new DateTimeOffset(2026, 9, 23, 13, 59, 25, TimeSpan.FromHours(8));
         var antigravity = CreateAntigravityState(refreshedAt) with { FiveHourResetAt = null };
         var codex = CreateCodexState(refreshedAt) with { FiveHourResetAt = null };
 
-        var resets = AiUsageTooltipFormatter.FormatResetDetails(
+        var details = AiUsageTooltipFormatter.FormatDetails(
             antigravity,
             codex,
             new DateTimeOffset(2026, 9, 23, 14, 0, 0, TimeSpan.FromHours(8)),
             english: false);
 
-        Assert.Contains(
-            "Antigravity Week : 09-24 10:15:00 [余20h]",
-            resets);
-        Assert.Contains(
-            "Codex       Week : 09-27 09:29:00 [余91h]",
-            resets);
+        Assert.Contains("重置 : Week :09-24 10:15:00 [余20h]", details);
+        Assert.Contains("重置 : Week :09-27 09:29:00 [余91h]", details);
     }
 
     [Fact]
-    public void KeepsTheUpdateTimeWhenResetTimesAreUnavailable()
+    public void KeepsOnlyTheUpdateTimeWhenResetTimesAreUnavailable()
     {
         var refreshedAt = new DateTimeOffset(2026, 9, 23, 13, 59, 25, TimeSpan.FromHours(8));
         var antigravity = CreateAntigravityState(refreshedAt) with
@@ -116,13 +85,14 @@ public sealed class AiUsageTooltipFormatterTests
             ResetAt = null
         };
 
-        var resets = AiUsageTooltipFormatter.FormatResetDetails(
+        var details = AiUsageTooltipFormatter.FormatDetails(
             antigravity,
             codex,
             refreshedAt,
             english: false);
 
-        Assert.Equal("重置时间[2026-09-23 13:59:25更新]:", resets);
+        Assert.DoesNotContain("重置 :", details);
+        Assert.EndsWith("2026-09-23 13:59:25", details);
     }
 
     private static WidgetViewState CreateAntigravityState(DateTimeOffset refreshedAt)
@@ -148,6 +118,9 @@ public sealed class AiUsageTooltipFormatterTests
                     new("Claude 5h", "Claude and GPT models", 100, null, AntigravityQuotaPeriod.Short),
                     new("Claude week", "Claude and GPT models", 19.1, null, AntigravityQuotaPeriod.Weekly)
                 ])
+            {
+                SelectedGroup = AntigravityQuotaGroup.Gemini
+            }
         };
     }
 

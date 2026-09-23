@@ -8,46 +8,32 @@ public static class AiUsageTooltipPresentation
 {
     public static IReadOnlyList<AiUsageTooltipLine> Build(
         string details,
-        string? resetDetails,
-        UsageProvider activeProvider)
+        UsageProvider activeProvider,
+        AntigravityQuotaGroup selectedAntigravityGroup)
     {
-        var lines = new List<AiUsageTooltipLine>();
-        UsageProvider? currentProvider = null;
-        foreach (var line in SplitLines(details))
-        {
-            if (line.StartsWith("Antigravity :", StringComparison.Ordinal))
-            {
-                currentProvider = UsageProvider.Antigravity;
-            }
-            else if (line.StartsWith("Codex :", StringComparison.Ordinal))
-            {
-                currentProvider = UsageProvider.Codex;
-            }
-            else if (line.Length == 0)
-            {
-                currentProvider = null;
-            }
+        return SplitLines(details)
+            .Select(line => new AiUsageTooltipLine(
+                line,
+                IsSelectedQuotaLine(line, activeProvider, selectedAntigravityGroup)))
+            .ToArray();
+    }
 
-            lines.Add(new AiUsageTooltipLine(line, currentProvider == activeProvider));
+    private static bool IsSelectedQuotaLine(
+        string line,
+        UsageProvider activeProvider,
+        AntigravityQuotaGroup selectedAntigravityGroup)
+    {
+        if (activeProvider == UsageProvider.Codex)
+        {
+            return line.StartsWith("Codex [", StringComparison.Ordinal);
         }
 
-        if (resetDetails is null)
+        return selectedAntigravityGroup switch
         {
-            return lines;
-        }
-
-        lines.Add(new AiUsageTooltipLine(string.Empty, false));
-        foreach (var line in SplitLines(resetDetails))
-        {
-            UsageProvider? provider = line.StartsWith("Antigravity ", StringComparison.Ordinal)
-                ? UsageProvider.Antigravity
-                : line.StartsWith("Codex ", StringComparison.Ordinal)
-                    ? UsageProvider.Codex
-                    : null;
-            lines.Add(new AiUsageTooltipLine(line, provider == activeProvider));
-        }
-
-        return lines;
+            AntigravityQuotaGroup.Gemini => line.StartsWith("Gemini [", StringComparison.Ordinal),
+            AntigravityQuotaGroup.Claude => line.StartsWith("Claude [", StringComparison.Ordinal),
+            _ => false
+        };
     }
 
     private static IEnumerable<string> SplitLines(string text)

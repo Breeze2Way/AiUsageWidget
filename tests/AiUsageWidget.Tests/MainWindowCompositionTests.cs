@@ -5,7 +5,7 @@ namespace AiUsageWidget.Tests;
 public sealed class MainWindowCompositionTests
 {
     [Fact]
-    public void UsesGreenForTheCircleProviderAndWhiteForTheOtherProvider()
+    public void UsesGreenOnlyForTheSelectedQuotaRow()
     {
         System.Windows.Media.Color? antigravityColor = null;
         System.Windows.Media.Color? codexColor = null;
@@ -15,12 +15,18 @@ public sealed class MainWindowCompositionTests
             try
             {
                 var inlines = MainWindow.CreateTooltipInlines(
-                    "Antigravity : usage" + Environment.NewLine + "Codex : usage",
-                    resetDetails: null,
-                    UsageProvider.Antigravity);
+                    string.Join(Environment.NewLine,
+                        "Gemini [5h : 80%] [周 : 70%]",
+                        "用量 : 1.0M [昨日:2.0M  7天:3.0M  30天4.0M]",
+                        "Codex [5h : 60%] [周 : 50%]"),
+                    UsageProvider.Antigravity,
+                    AntigravityQuotaGroup.Gemini);
                 var runs = inlines.OfType<System.Windows.Documents.Run>().ToArray();
                 antigravityColor = ((System.Windows.Media.SolidColorBrush)runs[0].Foreground).Color;
-                codexColor = ((System.Windows.Media.SolidColorBrush)runs[1].Foreground).Color;
+                Assert.Equal(
+                    System.Windows.Media.Colors.White,
+                    ((System.Windows.Media.SolidColorBrush)runs[1].Foreground).Color);
+                codexColor = ((System.Windows.Media.SolidColorBrush)runs[2].Foreground).Color;
             }
             catch (Exception ex)
             {
@@ -37,15 +43,21 @@ public sealed class MainWindowCompositionTests
     }
 
     [Fact]
-    public void SeparatesUsageAndResetSectionsWithABlankLine()
+    public void PreservesTheFormattedTooltipLineOrder()
     {
         var lines = AiUsageTooltipPresentation.Build(
-            "Codex : usage",
-            "重置时间[2026-09-23 13:59:25更新]:",
-            UsageProvider.Codex);
+            "Codex [5h : 69%] [周 : 13%]" + Environment.NewLine +
+            "重置 : 09-23 20:21:08 [余3h]" + Environment.NewLine +
+            "2026-09-23 17:12:48",
+            UsageProvider.Codex,
+            AntigravityQuotaGroup.Unknown);
 
         Assert.Equal(
-            ["Codex : usage", string.Empty, "重置时间[2026-09-23 13:59:25更新]:"],
+            [
+                "Codex [5h : 69%] [周 : 13%]",
+                "重置 : 09-23 20:21:08 [余3h]",
+                "2026-09-23 17:12:48"
+            ],
             lines.Select(line => line.Text));
     }
 

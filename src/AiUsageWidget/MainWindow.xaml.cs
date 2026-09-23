@@ -377,23 +377,8 @@ public partial class MainWindow : Window
         SetDetails(AiUsageTooltipFormatter.FormatDetails(
             lastState,
             lastCodexState,
-            GetLatestRefreshTime(),
+            DateTimeOffset.Now,
             english: WidgetLanguage.IsEnglish(settings.Language)));
-    }
-
-    private DateTimeOffset GetLatestRefreshTime()
-    {
-        if (lastState is null)
-        {
-            return lastCodexState?.RefreshedAt ?? DateTimeOffset.Now;
-        }
-
-        if (lastCodexState is null || lastState.RefreshedAt >= lastCodexState.RefreshedAt)
-        {
-            return lastState.RefreshedAt;
-        }
-
-        return lastCodexState.RefreshedAt;
     }
 
     private void ApplyActiveProvider()
@@ -422,35 +407,30 @@ public partial class MainWindow : Window
     private void SetDetails(string details)
     {
         lastDetails = details;
-        ApplyTooltipDetails(
-            details,
-            AiUsageTooltipFormatter.FormatResetDetails(
-                lastState,
-                lastCodexState,
-                DateTimeOffset.Now,
-                english: WidgetLanguage.IsEnglish(settings.Language)));
+        ApplyTooltipDetails(details);
     }
 
     private void ResetCountdownTimer_Tick(object? sender, EventArgs e)
     {
-        if (lastDetails is not null)
+        if (lastDetails is not null && (lastState is not null || lastCodexState is not null))
         {
-            ApplyTooltipDetails(
-                lastDetails,
-                AiUsageTooltipFormatter.FormatResetDetails(
-                    lastState,
-                    lastCodexState,
-                    DateTimeOffset.Now,
-                    english: WidgetLanguage.IsEnglish(settings.Language)));
+            SetDetails(AiUsageTooltipFormatter.FormatDetails(
+                lastState,
+                lastCodexState,
+                DateTimeOffset.Now,
+                english: WidgetLanguage.IsEnglish(settings.Language)));
         }
     }
 
-    private void ApplyTooltipDetails(string details, string? resetDetails)
+    private void ApplyTooltipDetails(string details)
     {
         foreach (var textBlock in new[] { ballDetailsText, hostDetailsText })
         {
             textBlock.Inlines.Clear();
-            foreach (var inline in CreateTooltipInlines(details, resetDetails, activeProvider))
+            foreach (var inline in CreateTooltipInlines(
+                         details,
+                         activeProvider,
+                         lastState?.Quota?.SelectedGroup ?? AntigravityQuotaGroup.Unknown))
             {
                 textBlock.Inlines.Add(inline);
             }
@@ -459,11 +439,14 @@ public partial class MainWindow : Window
 
     internal static IReadOnlyList<Inline> CreateTooltipInlines(
         string details,
-        string? resetDetails,
-        UsageProvider activeProvider)
+        UsageProvider activeProvider,
+        AntigravityQuotaGroup selectedAntigravityGroup)
     {
         var inlines = new List<Inline>();
-        var lines = AiUsageTooltipPresentation.Build(details, resetDetails, activeProvider);
+        var lines = AiUsageTooltipPresentation.Build(
+            details,
+            activeProvider,
+            selectedAntigravityGroup);
         for (var index = 0; index < lines.Count; index++)
         {
             if (index > 0)
