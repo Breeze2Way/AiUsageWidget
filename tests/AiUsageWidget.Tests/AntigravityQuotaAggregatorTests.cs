@@ -58,5 +58,56 @@ public sealed class AntigravityQuotaAggregatorTests
 
         Assert.Equal(66.95, result.ShortRemainingPercent!.Value, precision: 6);
         Assert.Equal(94.49, result.WeeklyRemainingPercent!.Value, precision: 6);
+        Assert.Equal(AntigravityQuotaGroup.Gemini, result.SelectedGroup);
+    }
+
+    [Fact]
+    public void ExactSelectedModelIdDeterminesTheClaudeGroupBeforeTheLabel()
+    {
+        var claudeRow = new AntigravityQuotaRow(
+            "Claude",
+            "Claude and GPT models",
+            45,
+            null,
+            AntigravityQuotaPeriod.Short)
+        {
+            ModelId = "claude-selected"
+        };
+        var snapshot = new AntigravityQuotaSnapshot(
+            "Pro",
+            [
+                new("Gemini", "Gemini Models", 80, null, AntigravityQuotaPeriod.Short)
+                {
+                    ModelId = "gemini-other"
+                },
+                claudeRow
+            ],
+            DateTimeOffset.UtcNow)
+        {
+            SelectedModelId = "claude-selected",
+            SelectedModelLabel = "Gemini 3.8 Flash (High)"
+        };
+
+        var result = AntigravityQuotaAggregator.Aggregate(snapshot);
+
+        Assert.Equal(AntigravityQuotaGroup.Claude, result.SelectedGroup);
+        Assert.Equal(45, result.ShortRemainingPercent);
+    }
+
+    [Fact]
+    public void UnknownSelectedModelDoesNotClaimAQuotaGroup()
+    {
+        var snapshot = new AntigravityQuotaSnapshot(
+            "Pro",
+            [new("Other", "Other models", 50, null, AntigravityQuotaPeriod.Short)],
+            DateTimeOffset.UtcNow)
+        {
+            SelectedModelId = "missing-model",
+            SelectedModelLabel = "Unknown model"
+        };
+
+        var result = AntigravityQuotaAggregator.Aggregate(snapshot);
+
+        Assert.Equal(AntigravityQuotaGroup.Unknown, result.SelectedGroup);
     }
 }

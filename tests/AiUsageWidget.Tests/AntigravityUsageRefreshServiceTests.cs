@@ -14,6 +14,7 @@ public sealed class AntigravityUsageRefreshServiceTests
         Assert.Equal(66.95, state.FiveHourRemainingPercent!.Value, precision: 6);
         Assert.Equal(94.49, state.OfficialRemainingPercent!.Value, precision: 6);
         Assert.Equal("Pro", state.Quota!.PlanName);
+        Assert.Equal(AntigravityQuotaGroup.Gemini, state.Quota.SelectedGroup);
         Assert.False(state.IsEstimate);
         Assert.Contains("Antigravity", state.Status);
     }
@@ -54,6 +55,9 @@ public sealed class AntigravityUsageRefreshServiceTests
                 new("5h", "Gemini Models", 66.95, Now.AddHours(3), AntigravityQuotaPeriod.Short),
                 new("weekly", "Gemini Models", 94.49, Now.AddDays(6), AntigravityQuotaPeriod.Weekly)
             ],
-            Now);
+            Now)
+        {
+            SelectedModelLabel = "Gemini 3.8 Flash (High)"
+        };
     }
 }
