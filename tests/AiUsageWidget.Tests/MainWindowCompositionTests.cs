@@ -5,6 +5,14 @@ namespace AiUsageWidget.Tests;
 public sealed class MainWindowCompositionTests
 {
     [Fact]
+    public void SeparatesUsageAndResetSectionsWithABlankLine()
+    {
+        Assert.Equal(
+            Environment.NewLine + Environment.NewLine + "重置时间[2026-09-23 13:59:25更新]:",
+            MainWindow.FormatResetSection("重置时间[2026-09-23 13:59:25更新]:"));
+    }
+
+    [Fact]
     public void CreatesReadableWideMonospacedTooltipText()
     {
         double? maxWidth = null;

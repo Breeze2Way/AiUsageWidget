@@ -56,6 +56,11 @@ public static class AiUsageTooltipFormatter
         DateTimeOffset now,
         bool english)
     {
+        if (antigravity is null && codex is null)
+        {
+            return null;
+        }
+
         var providerLines = new List<string>();
         if (antigravity is not null)
         {
@@ -77,11 +82,6 @@ public static class AiUsageTooltipFormatter
                 codex.WeeklyResetAt ?? codex.ResetAt,
                 now,
                 english);
-        }
-
-        if (providerLines.Count == 0)
-        {
-            return null;
         }
 
         var refreshedAt = LatestRefreshAt(antigravity, codex).ToLocalTime();
@@ -216,7 +216,8 @@ public static class AiUsageTooltipFormatter
         if (weeklyResetAt.HasValue)
         {
             var compactChinese = provider != "Codex";
-            parts.Add($"Week:{FormatResetTime(weeklyResetAt.Value, now, english, compactChinese)}");
+            var weeklyPrefix = parts.Count == 0 ? $"{prefix} " : string.Empty;
+            parts.Add($"{weeklyPrefix}Week:{FormatResetTime(weeklyResetAt.Value, now, english, compactChinese)}");
         }
 
         lines.Add(string.Join(separator, parts));

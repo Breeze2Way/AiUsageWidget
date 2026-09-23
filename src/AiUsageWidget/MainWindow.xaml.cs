@@ -449,13 +449,18 @@ public partial class MainWindow : Window
             textBlock.Inlines.Add(new Run(details));
             if (resetDetails is not null)
             {
-                textBlock.Inlines.Add(new Run(Environment.NewLine + resetDetails)
+                textBlock.Inlines.Add(new Run(FormatResetSection(resetDetails))
                 {
                     Foreground = System.Windows.Media.Brushes.IndianRed,
                     FontWeight = System.Windows.FontWeights.SemiBold
                 });
             }
         }
+    }
+
+    internal static string FormatResetSection(string resetDetails)
+    {
+        return Environment.NewLine + Environment.NewLine + resetDetails;
     }
 
     internal static System.Windows.Controls.TextBlock CreateDetailsTextBlock()

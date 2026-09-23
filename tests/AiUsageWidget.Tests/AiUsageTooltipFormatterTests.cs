@@ -78,6 +78,53 @@ public sealed class AiUsageTooltipFormatterTests
         Assert.DoesNotContain("重置", resets);
     }
 
+    [Fact]
+    public void KeepsProviderNamesWhenOnlyWeeklyResetTimesAreAvailable()
+    {
+        var refreshedAt = new DateTimeOffset(2026, 9, 23, 13, 59, 25, TimeSpan.FromHours(8));
+        var antigravity = CreateAntigravityState(refreshedAt) with { FiveHourResetAt = null };
+        var codex = CreateCodexState(refreshedAt) with { FiveHourResetAt = null };
+
+        var resets = AiUsageTooltipFormatter.FormatResetDetails(
+            antigravity,
+            codex,
+            new DateTimeOffset(2026, 9, 23, 14, 0, 0, TimeSpan.FromHours(8)),
+            english: false);
+
+        Assert.Contains(
+            "Antigravity Week:2026-09-24 10:15 [余20h]",
+            resets);
+        Assert.Contains(
+            "      Codex Week:2026-09-27 09:29 [剩余 91h]",
+            resets);
+    }
+
+    [Fact]
+    public void KeepsTheUpdateTimeWhenResetTimesAreUnavailable()
+    {
+        var refreshedAt = new DateTimeOffset(2026, 9, 23, 13, 59, 25, TimeSpan.FromHours(8));
+        var antigravity = CreateAntigravityState(refreshedAt) with
+        {
+            FiveHourResetAt = null,
+            WeeklyResetAt = null,
+            ResetAt = null
+        };
+        var codex = CreateCodexState(refreshedAt) with
+        {
+            FiveHourResetAt = null,
+            WeeklyResetAt = null,
+            ResetAt = null
+        };
+
+        var resets = AiUsageTooltipFormatter.FormatResetDetails(
+            antigravity,
+            codex,
+            refreshedAt,
+            english: false);
+
+        Assert.Equal("重置时间[2026-09-23 13:59:25更新]:", resets);
+    }
+
     private static WidgetViewState CreateAntigravityState(DateTimeOffset refreshedAt)
     {
         return new WidgetViewState(refreshedAt, "ok", false, 33.6)
