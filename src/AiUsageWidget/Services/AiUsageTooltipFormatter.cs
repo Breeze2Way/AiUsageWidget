@@ -205,22 +205,20 @@ public static class AiUsageTooltipFormatter
             return;
         }
 
-        var prefix = provider == "Codex" ? "      Codex" : provider;
-        var separator = provider == "Codex" ? "   " : "  ";
+        var providerColumn = provider.PadRight(12);
         var parts = new List<string>();
         if (fiveHourResetAt.HasValue)
         {
-            parts.Add($"{prefix} 5H : {FormatResetTime(fiveHourResetAt.Value, now, english, compactChinese: true)}");
+            parts.Add($"{providerColumn}5H:{FormatResetTime(fiveHourResetAt.Value, now, english, compactChinese: true)}");
         }
 
         if (weeklyResetAt.HasValue)
         {
-            var compactChinese = provider != "Codex";
-            var weeklyPrefix = parts.Count == 0 ? $"{prefix} " : string.Empty;
-            parts.Add($"{weeklyPrefix}Week:{FormatResetTime(weeklyResetAt.Value, now, english, compactChinese)}");
+            var weeklyPrefix = parts.Count == 0 ? providerColumn : string.Empty;
+            parts.Add($"{weeklyPrefix}Week : {FormatResetTime(weeklyResetAt.Value, now, english, compactChinese: true)}");
         }
 
-        lines.Add(string.Join(separator, parts));
+        lines.Add(string.Join("  ", parts));
     }
 
     private static string FormatResetTime(
