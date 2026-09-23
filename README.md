@@ -10,10 +10,10 @@ AiUsageWidget 是一个轻量的 Windows 用量悬浮球，在同一处展示 An
   悬浮球中心和填充显示当前激活来源的五小时剩余比例，外环显示同一来源的周剩余比例。
 - A compact, wide tooltip shows today, yesterday, 7-day, and 30-day token totals for both providers, plus Gemini, Claude, and Codex quota rows.
   宽版紧凑悬停详情分别显示两种来源的今日、昨日、7 天和 30 天 token 总量，并列出 Gemini、Claude 与 Codex 额度。
-- Reset times and countdowns are grouped by provider, with the latest data refresh time shown in the heading.
-  重置时间和剩余倒计时按来源分组，并在标题中显示最近的数据更新时间。
-- The provider currently shown in the floating ball is highlighted in green throughout the tooltip; the other provider remains white.
-  当前悬浮球显示的来源会在整个悬停详情中以绿色高亮，另一来源保持白色。
+- Reset times and countdowns appear directly below each provider's usage row, followed by the latest data refresh timestamp.
+  重置时间和剩余倒计时直接显示在对应来源的用量行下方，末尾显示最近的数据更新时间。
+- Only the quota row represented by the floating ball is green. For Antigravity this is the currently selected Gemini or Claude model group; for Codex it is the Codex quota row. Every usage, reset, and timestamp row stays white.
+  只有悬浮球当前代表的额度行显示为绿色：Antigravity 对应当前选中的 Gemini 或 Claude 模型组，Codex 对应 Codex 额度行；用量、重置和更新时间行均保持白色。
 - Foreground ChatGPT/Codex selects Codex. Foreground Antigravity selects Antigravity. Other windows retain the last selection; startup defaults to Antigravity.
   前台为 ChatGPT/Codex 时选 Codex，前台为 Antigravity 时选 Antigravity；其他窗口保持最近一次选择，启动默认选择 Antigravity。
 - Chinese and English text follow the language configured in the widget.
@@ -51,16 +51,16 @@ Chinese mode uses the following compact layout; English mode uses the same group
 中文模式采用以下紧凑格式；英文模式保持相同分组并使用英文标签。
 
 ```text
-Antigravity : 7.1M[昨日:125.6M，7天:169.4M，30天1175.5M]
-     Gemini : [5h:92.8%][周:33.6%]
-     Claude : [5h:100%][周:19.1%]
+Gemini [5h : 92.8%] [周 : 33.6%]
+Claude [5h : 100%] [周 : 19.1%]
+用量 : 7.1M [昨日:125.6M  7天:169.4M  30天1175.5M]
+重置 : 09-23 15:21:00 [余1h]   Week :09-24 10:15:00 [余20h]
 
-Codex : 29.1M[昨日:73.7M，7天:169.4M，30天1175.5M]
-      Codex : [5h:95%][周:23%]
+Codex [5h : 95%] [周 : 23%]
+用量 : 29.1M [昨日:73.7M, 7天:169.4M, 30天1175.5M]
+重置 : 09-23 15:54:00 [余1h]   Week :09-27 09:29:00 [余91h]
 
-重置时间[2026-09-23 13:59:25更新]:
-Antigravity 5H:09-23 15:21:00 [余1h]  Week : 09-24 10:15:00 [余20h]
-Codex       5H:09-23 15:54:00 [余1h]  Week : 09-27 09:29:00 [余91h]
+2026-09-23 13:59:25
 ```
 
 ## Data and privacy / 数据与隐私
