@@ -47,8 +47,8 @@ public sealed class AiUsageTooltipFormatterTests
         Assert.Equal(
             string.Join(Environment.NewLine,
                 "重置时间[2026-09-23 13:59:25更新]:",
-                "Antigravity 5H:2026-09-23 15:21 [余1h]  Week : 2026-09-24 10:15 [余20h]",
-                "Codex       5H:2026-09-23 15:54 [余1h]  Week : 2026-09-27 09:29 [余91h]"),
+                "Antigravity 5H:09-23 15:21:00 [余1h]  Week : 09-24 10:15:00 [余20h]",
+                "Codex       5H:09-23 15:54:00 [余1h]  Week : 09-27 09:29:00 [余91h]"),
             details);
     }
 
@@ -92,10 +92,10 @@ public sealed class AiUsageTooltipFormatterTests
             english: false);
 
         Assert.Contains(
-            "Antigravity Week : 2026-09-24 10:15 [余20h]",
+            "Antigravity Week : 09-24 10:15:00 [余20h]",
             resets);
         Assert.Contains(
-            "Codex       Week : 2026-09-27 09:29 [余91h]",
+            "Codex       Week : 09-27 09:29:00 [余91h]",
             resets);
     }
 

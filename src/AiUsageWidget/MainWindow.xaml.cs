@@ -270,6 +270,10 @@ public partial class MainWindow : Window
         if (previousProvider != activeProvider)
         {
             ApplyActiveProvider();
+            if (lastDetails is not null)
+            {
+                SetDetails(lastDetails);
+            }
         }
     }
 
@@ -446,21 +450,40 @@ public partial class MainWindow : Window
         foreach (var textBlock in new[] { ballDetailsText, hostDetailsText })
         {
             textBlock.Inlines.Clear();
-            textBlock.Inlines.Add(new Run(details));
-            if (resetDetails is not null)
+            foreach (var inline in CreateTooltipInlines(details, resetDetails, activeProvider))
             {
-                textBlock.Inlines.Add(new Run(FormatResetSection(resetDetails))
-                {
-                    Foreground = System.Windows.Media.Brushes.IndianRed,
-                    FontWeight = System.Windows.FontWeights.SemiBold
-                });
+                textBlock.Inlines.Add(inline);
             }
         }
     }
 
-    internal static string FormatResetSection(string resetDetails)
+    internal static IReadOnlyList<Inline> CreateTooltipInlines(
+        string details,
+        string? resetDetails,
+        UsageProvider activeProvider)
     {
-        return Environment.NewLine + Environment.NewLine + resetDetails;
+        var inlines = new List<Inline>();
+        var lines = AiUsageTooltipPresentation.Build(details, resetDetails, activeProvider);
+        for (var index = 0; index < lines.Count; index++)
+        {
+            if (index > 0)
+            {
+                inlines.Add(new LineBreak());
+            }
+
+            var line = lines[index];
+            inlines.Add(new Run(line.Text)
+            {
+                Foreground = line.IsHighlighted
+                    ? new SolidColorBrush(System.Windows.Media.Color.FromRgb(0x4A, 0xDE, 0x80))
+                    : System.Windows.Media.Brushes.White,
+                FontWeight = line.IsHighlighted
+                    ? System.Windows.FontWeights.SemiBold
+                    : System.Windows.FontWeights.Normal
+            });
+        }
+
+        return inlines;
     }
 
     internal static System.Windows.Controls.TextBlock CreateDetailsTextBlock()

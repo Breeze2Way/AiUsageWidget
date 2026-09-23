@@ -12,6 +12,8 @@ AiUsageWidget 是一个轻量的 Windows 用量悬浮球，在同一处展示 An
   宽版紧凑悬停详情分别显示两种来源的今日、昨日、7 天和 30 天 token 总量，并列出 Gemini、Claude 与 Codex 额度。
 - Reset times and countdowns are grouped by provider, with the latest data refresh time shown in the heading.
   重置时间和剩余倒计时按来源分组，并在标题中显示最近的数据更新时间。
+- The provider currently shown in the floating ball is highlighted in green throughout the tooltip; the other provider remains white.
+  当前悬浮球显示的来源会在整个悬停详情中以绿色高亮，另一来源保持白色。
 - Foreground ChatGPT/Codex selects Codex. Foreground Antigravity selects Antigravity. Other windows retain the last selection; startup defaults to Antigravity.
   前台为 ChatGPT/Codex 时选 Codex，前台为 Antigravity 时选 Antigravity；其他窗口保持最近一次选择，启动默认选择 Antigravity。
 - Chinese and English text follow the language configured in the widget.
@@ -57,8 +59,8 @@ Codex : 29.1M[昨日:73.7M，7天:169.4M，30天1175.5M]
       Codex : [5h:95%][周:23%]
 
 重置时间[2026-09-23 13:59:25更新]:
-Antigravity 5H:2026-09-23 15:21 [余1h]  Week : 2026-09-24 10:15 [余20h]
-Codex       5H:2026-09-23 15:54 [余1h]  Week : 2026-09-27 09:29 [余91h]
+Antigravity 5H:09-23 15:21:00 [余1h]  Week : 09-24 10:15:00 [余20h]
+Codex       5H:09-23 15:54:00 [余1h]  Week : 09-27 09:29:00 [余91h]
 ```
 
 ## Data and privacy / 数据与隐私

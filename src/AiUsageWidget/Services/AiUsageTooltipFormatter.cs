@@ -232,7 +232,7 @@ public static class AiUsageTooltipFormatter
         var remaining = english
             ? $"{hours}h left"
             : compactChinese ? $"余{hours}h" : $"剩余 {hours}h";
-        return $"{resetAt.ToLocalTime():yyyy-MM-dd HH:mm} [{remaining}]";
+        return $"{resetAt.ToLocalTime():MM-dd HH:mm:ss} [{remaining}]";
     }
 
     private static DateTimeOffset LatestRefreshAt(
