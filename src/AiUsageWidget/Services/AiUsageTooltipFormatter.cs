@@ -16,28 +16,37 @@ public static class AiUsageTooltipFormatter
         var lines = new List<string>();
         if (antigravity is not null)
         {
-            lines.Add(FormatTokenUsage("Antigravity", antigravity.TodayTokens, antigravity.YesterdayTokens, english));
+            lines.Add(FormatTokenUsage(
+                "Antigravity",
+                antigravity.TodayTokens,
+                antigravity.YesterdayTokens,
+                antigravity.SevenDayTokens,
+                antigravity.ThirtyDayTokens,
+                english));
             AddAntigravityQuotaLines(lines, antigravity, english);
         }
 
         if (codex is not null)
         {
-            lines.Add(FormatTokenUsage("Codex", codex.TodayTokens, codex.YesterdayTokens, english));
-            lines.Add(english
-                ? $"Codex last 7 days:{FormatMillions(codex.SevenDay.Usage.TotalTokens)}"
-                : $"Codex 近7天总量:{FormatMillions(codex.SevenDay.Usage.TotalTokens)}");
-            lines.Add(english
-                ? $"Codex last 30 days:{FormatMillions(codex.ThirtyDay.Usage.TotalTokens)}"
-                : $"Codex 近30天总量:{FormatMillions(codex.ThirtyDay.Usage.TotalTokens)}");
-            lines.Add(FormatQuotaLine(
+            if (lines.Count > 0)
+            {
+                lines.Add(string.Empty);
+            }
+
+            lines.Add(FormatTokenUsage(
+                "Codex",
+                codex.TodayTokens,
+                codex.YesterdayTokens,
+                codex.SevenDay.Usage.TotalTokens,
+                codex.ThirtyDay.Usage.TotalTokens,
+                english));
+            lines.Add("      " + FormatQuotaLine(
                 "Codex",
                 codex.FiveHourRemainingPercent,
                 codex.OfficialRemainingPercent,
                 english));
         }
 
-        lines.Add(string.Empty);
-        lines.Add($"{(english ? "Updated" : "更新时间")}:{refreshedAt.ToLocalTime():yyyy-MM-dd HH:mm:ss}");
         return string.Join(Environment.NewLine, lines);
     }
 
@@ -47,32 +56,40 @@ public static class AiUsageTooltipFormatter
         DateTimeOffset now,
         bool english)
     {
-        var lines = new List<string>();
+        var providerLines = new List<string>();
         if (antigravity is not null)
         {
-            AddReset(lines, "Antigravity", antigravity.FiveHourResetAt, now, english, isWeekly: false);
-            AddReset(
-                lines,
+            AddProviderReset(
+                providerLines,
                 "Antigravity",
+                antigravity.FiveHourResetAt,
                 antigravity.WeeklyResetAt ?? antigravity.ResetAt,
                 now,
-                english,
-                isWeekly: true);
+                english);
         }
 
         if (codex is not null)
         {
-            AddReset(lines, "Codex", codex.FiveHourResetAt, now, english, isWeekly: false);
-            AddReset(
-                lines,
+            AddProviderReset(
+                providerLines,
                 "Codex",
+                codex.FiveHourResetAt,
                 codex.WeeklyResetAt ?? codex.ResetAt,
                 now,
-                english,
-                isWeekly: true);
+                english);
         }
 
-        return lines.Count == 0 ? null : string.Join(Environment.NewLine, lines);
+        if (providerLines.Count == 0)
+        {
+            return null;
+        }
+
+        var refreshedAt = LatestRefreshAt(antigravity, codex).ToLocalTime();
+        var heading = english
+            ? $"Reset times [updated {refreshedAt:yyyy-MM-dd HH:mm:ss}]:"
+            : $"重置时间[{refreshedAt:yyyy-MM-dd HH:mm:ss}更新]:";
+        providerLines.Insert(0, heading);
+        return string.Join(Environment.NewLine, providerLines);
     }
 
     private static void AddAntigravityQuotaLines(
@@ -116,7 +133,11 @@ public static class AiUsageTooltipFormatter
                 .Select(row => (double?)row.RemainingPercent)
                 .OrderBy(value => value)
                 .FirstOrDefault();
-            lines.Add(FormatQuotaLine(FormatGroupName(group.Key, english), shortPercent, weeklyPercent, english));
+            lines.Add("     " + FormatQuotaLine(
+                FormatGroupName(group.Key, english),
+                shortPercent,
+                weeklyPercent,
+                english));
         }
     }
 
@@ -138,18 +159,25 @@ public static class AiUsageTooltipFormatter
             : group.Trim();
     }
 
-    private static string FormatTokenUsage(string name, long today, long yesterday, bool english)
+    private static string FormatTokenUsage(
+        string name,
+        long today,
+        long yesterday,
+        long sevenDay,
+        long thirtyDay,
+        bool english)
     {
         return english
-            ? $"{name} tokens today:{FormatMillions(today)} (yesterday:{FormatMillions(yesterday)})"
-            : $"{name} 今日token:{FormatMillions(today)}(昨日：{FormatMillions(yesterday)})";
+            ? $"{name} : {FormatMillions(today)}[Yesterday:{FormatMillions(yesterday)}, " +
+              $"7 days:{FormatMillions(sevenDay)}, 30 days:{FormatMillions(thirtyDay)}]"
+            : $"{name} : {FormatMillions(today)}[昨日:{FormatMillions(yesterday)}，" +
+              $"7天:{FormatMillions(sevenDay)}，30天{FormatMillions(thirtyDay)}]";
     }
 
     private static string FormatQuotaLine(string name, double? fiveHour, double? weekly, bool english)
     {
-        var colon = english ? ":" : "：";
-        var weeklyLabel = english ? "Weekly" : "周";
-        return $"{name} : [5h{colon}{FormatPercent(fiveHour, english)}][{weeklyLabel}{colon}{FormatPercent(weekly, english)}]";
+        var weeklyLabel = english ? "Week" : "周";
+        return $"{name} : [5h:{FormatPercent(fiveHour, english)}][{weeklyLabel}:{FormatPercent(weekly, english)}]";
     }
 
     private static string FormatPercent(double? value, bool english)
@@ -164,26 +192,66 @@ public static class AiUsageTooltipFormatter
         return $"{(Math.Max(0, tokens) / 1_000_000d).ToString("0.0", CultureInfo.InvariantCulture)}M";
     }
 
-    private static void AddReset(
+    private static void AddProviderReset(
         ICollection<string> lines,
         string provider,
-        DateTimeOffset? resetAt,
+        DateTimeOffset? fiveHourResetAt,
+        DateTimeOffset? weeklyResetAt,
         DateTimeOffset now,
-        bool english,
-        bool isWeekly)
+        bool english)
     {
-        if (!resetAt.HasValue)
+        if (!fiveHourResetAt.HasValue && !weeklyResetAt.HasValue)
         {
             return;
         }
 
-        var hours = Math.Max(0, Math.Floor((resetAt.Value - now).TotalHours))
+        var prefix = provider == "Codex" ? "      Codex" : provider;
+        var separator = provider == "Codex" ? "   " : "  ";
+        var parts = new List<string>();
+        if (fiveHourResetAt.HasValue)
+        {
+            parts.Add($"{prefix} 5H : {FormatResetTime(fiveHourResetAt.Value, now, english, compactChinese: true)}");
+        }
+
+        if (weeklyResetAt.HasValue)
+        {
+            var compactChinese = provider != "Codex";
+            parts.Add($"Week:{FormatResetTime(weeklyResetAt.Value, now, english, compactChinese)}");
+        }
+
+        lines.Add(string.Join(separator, parts));
+    }
+
+    private static string FormatResetTime(
+        DateTimeOffset resetAt,
+        DateTimeOffset now,
+        bool english,
+        bool compactChinese)
+    {
+        var hours = Math.Max(0, Math.Floor((resetAt - now).TotalHours))
             .ToString("0", CultureInfo.InvariantCulture);
-        var label = english
-            ? $"{provider} {(isWeekly ? "Weekly" : "5-hour")} reset"
-            : $"{provider}{(isWeekly ? "周" : "五小时")}重置时间";
-        lines.Add(english
-            ? $"{label}: {resetAt.Value.ToLocalTime():yyyy-MM-dd HH:mm} [{hours}h remaining]"
-            : $"{label}:{resetAt.Value.ToLocalTime():yyyy-MM-dd HH:mm} [剩余 {hours}h]");
+        var remaining = english
+            ? $"{hours}h left"
+            : compactChinese ? $"余{hours}h" : $"剩余 {hours}h";
+        return $"{resetAt.ToLocalTime():yyyy-MM-dd HH:mm} [{remaining}]";
+    }
+
+    private static DateTimeOffset LatestRefreshAt(
+        WidgetViewState? antigravity,
+        CodexWidgetViewState? codex)
+    {
+        if (antigravity is null)
+        {
+            return codex?.RefreshedAt ?? DateTimeOffset.Now;
+        }
+
+        if (codex is null)
+        {
+            return antigravity.RefreshedAt;
+        }
+
+        return antigravity.RefreshedAt >= codex.RefreshedAt
+            ? antigravity.RefreshedAt
+            : codex.RefreshedAt;
     }
 }

@@ -24,7 +24,7 @@ public sealed class AntigravityTokenUsageTests
     }
 
     [Fact]
-    public void AggregatesTodayAndYesterdayUsingLocalDates()
+    public void AggregatesTodayYesterdaySevenAndThirtyDaysUsingLocalDates()
     {
         var now = new DateTimeOffset(2026, 9, 4, 8, 0, 0, TimeSpan.FromHours(8));
         var records = new[]
@@ -34,13 +34,19 @@ public sealed class AntigravityTokenUsageTests
             new AntigravityTokenUsageRecord(
                 new DateTimeOffset(2026, 9, 3, 15, 55, 0, TimeSpan.Zero), 300_000, 200_000),
             new AntigravityTokenUsageRecord(
-                new DateTimeOffset(2026, 9, 2, 15, 0, 0, TimeSpan.Zero), 99_000, 1_000)
+                new DateTimeOffset(2026, 9, 2, 15, 0, 0, TimeSpan.Zero), 99_000, 1_000),
+            new AntigravityTokenUsageRecord(
+                new DateTimeOffset(2026, 8, 30, 15, 0, 0, TimeSpan.Zero), 600_000, 400_000),
+            new AntigravityTokenUsageRecord(
+                new DateTimeOffset(2026, 8, 5, 15, 0, 0, TimeSpan.Zero), 8_000_000, 2_000_000)
         };
 
         var summary = AntigravityTokenUsageAggregator.Aggregate(records, now);
 
         Assert.Equal(2_100_000, summary.TodayTokens);
         Assert.Equal(500_000, summary.YesterdayTokens);
+        Assert.Equal(3_700_000, summary.SevenDayTokens);
+        Assert.Equal(3_700_000, summary.ThirtyDayTokens);
     }
 
     [Fact]

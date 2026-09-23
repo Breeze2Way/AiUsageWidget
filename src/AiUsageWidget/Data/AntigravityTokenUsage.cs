@@ -12,7 +12,9 @@ public sealed record AntigravityTokenUsageRecord(
 
 public sealed record AntigravityTokenUsageSummary(
     long TodayTokens,
-    long YesterdayTokens);
+    long YesterdayTokens,
+    long SevenDayTokens = 0,
+    long ThirtyDayTokens = 0);
 
 public static class AntigravityTokenUsageMetadataParser
 {

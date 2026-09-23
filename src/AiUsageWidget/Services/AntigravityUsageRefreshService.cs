@@ -84,6 +84,8 @@ public sealed class AntigravityUsageRefreshService
             Quota = quota,
             TodayTokens = tokenUsage.TodayTokens,
             YesterdayTokens = tokenUsage.YesterdayTokens,
+            SevenDayTokens = tokenUsage.SevenDayTokens,
+            ThirtyDayTokens = tokenUsage.ThirtyDayTokens,
             ResetAt = quota.WeeklyResetAt,
             WeeklyResetAt = quota.WeeklyResetAt,
             FiveHourRemainingPercent = quota.ShortRemainingPercent,
@@ -96,7 +98,9 @@ public sealed class AntigravityUsageRefreshService
         return state with
         {
             TodayTokens = lastTokenUsage.TodayTokens,
-            YesterdayTokens = lastTokenUsage.YesterdayTokens
+            YesterdayTokens = lastTokenUsage.YesterdayTokens,
+            SevenDayTokens = lastTokenUsage.SevenDayTokens,
+            ThirtyDayTokens = lastTokenUsage.ThirtyDayTokens
         };
     }
 }

@@ -5,6 +5,34 @@ namespace AiUsageWidget.Tests;
 public sealed class MainWindowCompositionTests
 {
     [Fact]
+    public void CreatesReadableWideMonospacedTooltipText()
+    {
+        double? maxWidth = null;
+        string? fontFamily = null;
+        Exception? error = null;
+        var thread = new Thread(() =>
+        {
+            try
+            {
+                var textBlock = MainWindow.CreateDetailsTextBlock();
+                maxWidth = textBlock.MaxWidth;
+                fontFamily = textBlock.FontFamily.Source;
+            }
+            catch (Exception ex)
+            {
+                error = ex;
+            }
+        });
+        thread.SetApartmentState(ApartmentState.STA);
+        thread.Start();
+        thread.Join();
+
+        Assert.Null(error);
+        Assert.Equal(600, maxWidth);
+        Assert.Equal("Consolas", fontFamily);
+    }
+
+    [Fact]
     public void CreatesRefreshServiceWithOfficialUsageReader()
     {
         var service = MainWindow.CreateRefreshService(

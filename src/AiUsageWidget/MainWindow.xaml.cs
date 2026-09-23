@@ -458,12 +458,13 @@ public partial class MainWindow : Window
         }
     }
 
-    private static System.Windows.Controls.TextBlock CreateDetailsTextBlock()
+    internal static System.Windows.Controls.TextBlock CreateDetailsTextBlock()
     {
         return new System.Windows.Controls.TextBlock
         {
             TextWrapping = TextWrapping.Wrap,
-            MaxWidth = 280,
+            MaxWidth = 600,
+            FontFamily = new System.Windows.Media.FontFamily("Consolas"),
             Margin = new Thickness(0)
         };
     }

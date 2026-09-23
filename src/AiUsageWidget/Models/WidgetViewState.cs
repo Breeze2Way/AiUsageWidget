@@ -15,5 +15,7 @@ public sealed record WidgetViewState(
     public double RecentTokensPerMinute { get; init; }
     public long TodayTokens { get; init; }
     public long YesterdayTokens { get; init; }
+    public long SevenDayTokens { get; init; }
+    public long ThirtyDayTokens { get; init; }
     public AntigravityDisplayQuota? Quota { get; init; }
 }
