@@ -95,6 +95,33 @@ public sealed class AiUsageTooltipFormatterTests
         Assert.EndsWith("2026-09-23 13:59:25", details);
     }
 
+    [Fact]
+    public void PreservesAnUnknownAntigravityGroupWithAProviderQualifiedName()
+    {
+        var refreshedAt = new DateTimeOffset(2026, 9, 23, 13, 59, 25, TimeSpan.FromHours(8));
+        var antigravity = CreateAntigravityState(refreshedAt) with
+        {
+            Quota = new AntigravityDisplayQuota(
+                "Pro",
+                20,
+                null,
+                10,
+                null,
+                [
+                    new("Codex 5h", "Codex", 20, null, AntigravityQuotaPeriod.Short),
+                    new("Codex week", "Codex", 10, null, AntigravityQuotaPeriod.Weekly)
+                ])
+        };
+
+        var details = AiUsageTooltipFormatter.FormatDetails(
+            antigravity,
+            codex: null,
+            refreshedAt,
+            english: false);
+
+        Assert.Contains("Antig Codex [5h : 20%] [周 : 10%]", details);
+    }
+
     private static WidgetViewState CreateAntigravityState(DateTimeOffset refreshedAt)
     {
         return new WidgetViewState(refreshedAt, "ok", false, 33.6)

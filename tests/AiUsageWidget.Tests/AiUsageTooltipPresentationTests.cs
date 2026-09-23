@@ -67,6 +67,23 @@ public sealed class AiUsageTooltipPresentationTests
         Assert.DoesNotContain(lines, line => line.IsHighlighted);
     }
 
+    [Fact]
+    public void CodexProviderDoesNotHighlightAnAntigravityGroupNamedCodex()
+    {
+        var details = string.Join(Environment.NewLine,
+            "Antig Codex [5h : 20%] [周 : 10%]",
+            string.Empty,
+            "Codex [5h : 95%] [周 : 23%]");
+
+        var lines = AiUsageTooltipPresentation.Build(
+            details,
+            UsageProvider.Codex,
+            AntigravityQuotaGroup.Unknown);
+
+        Assert.False(Assert.Single(lines, line => line.Text.StartsWith("Antig Codex", StringComparison.Ordinal)).IsHighlighted);
+        Assert.True(Assert.Single(lines, line => line.Text.StartsWith("Codex [", StringComparison.Ordinal)).IsHighlighted);
+    }
+
     private static void AssertAllNonQuotaRowsAreWhite(IReadOnlyList<AiUsageTooltipLine> lines)
     {
         Assert.All(

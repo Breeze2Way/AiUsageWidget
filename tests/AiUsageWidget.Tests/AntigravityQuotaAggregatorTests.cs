@@ -65,8 +65,8 @@ public sealed class AntigravityQuotaAggregatorTests
     public void ExactSelectedModelIdDeterminesTheClaudeGroupBeforeTheLabel()
     {
         var claudeRow = new AntigravityQuotaRow(
-            "Claude",
-            "Claude and GPT models",
+            "Claude Sonnet 4 5h",
+            null,
             45,
             null,
             AntigravityQuotaPeriod.Short)
@@ -109,5 +109,34 @@ public sealed class AntigravityQuotaAggregatorTests
         var result = AntigravityQuotaAggregator.Aggregate(snapshot);
 
         Assert.Equal(AntigravityQuotaGroup.Unknown, result.SelectedGroup);
+    }
+
+    [Fact]
+    public void ParserModelConfigFallbackKeepsTheSelectedGeminiGroup()
+    {
+        const string json = """
+        {
+          "userStatus": {
+            "cascadeModelConfigData": {
+              "defaultOverrideModelConfig": {
+                "modelOrAlias": { "model": "MODEL_PLACEHOLDER_M318" }
+              },
+              "clientModelConfigs": [
+                {
+                  "label": "Gemini 3.8 Flash (High)",
+                  "modelOrAlias": { "model": "MODEL_PLACEHOLDER_M318" },
+                  "quotaInfo": { "remainingFraction": 0.8 }
+                }
+              ]
+            }
+          }
+        }
+        """;
+        var snapshot = Assert.IsType<AntigravityQuotaSnapshot>(AntigravityQuotaParser.Parse(json));
+
+        var result = AntigravityQuotaAggregator.Aggregate(snapshot);
+
+        Assert.Equal(AntigravityQuotaGroup.Gemini, result.SelectedGroup);
+        Assert.Equal(80, result.ShortRemainingPercent);
     }
 }

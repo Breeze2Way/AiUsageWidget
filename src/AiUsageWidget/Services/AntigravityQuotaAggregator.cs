@@ -51,7 +51,12 @@ public static class AntigravityQuotaAggregator
                 .ToArray();
             if (exactRows.Length > 0)
             {
-                return (exactRows, ParseGroup(exactRows[0].Group));
+                var exactGroup = ParseGroup(exactRows[0].Group);
+                return (
+                    exactRows,
+                    exactGroup == AntigravityQuotaGroup.Unknown
+                        ? ParseGroup(exactRows[0].Label)
+                        : exactGroup);
             }
         }
 

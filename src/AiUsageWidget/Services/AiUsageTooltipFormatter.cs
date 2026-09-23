@@ -81,12 +81,10 @@ public static class AiUsageTooltipFormatter
             return;
         }
 
-        var recognizedGroups = quota.Rows
-            .GroupBy(row => row.Group ?? string.Empty, StringComparer.OrdinalIgnoreCase)
-            .Select(group => (Rows: group, Name: FormatGroupName(group.Key)))
-            .Where(group => group.Name is not null)
+        var groups = quota.Rows
+            .GroupBy(row => FormatGroupName(row, english), StringComparer.OrdinalIgnoreCase)
             .ToArray();
-        if (recognizedGroups.Length == 0)
+        if (groups.Length == 0)
         {
             lines.Add(FormatQuotaLine(
                 english ? "Models" : "模型",
@@ -96,11 +94,11 @@ public static class AiUsageTooltipFormatter
             return;
         }
 
-        foreach (var group in recognizedGroups)
+        foreach (var group in groups)
         {
-            var shortPercent = FindLowestPercent(group.Rows, AntigravityQuotaPeriod.Short);
-            var weeklyPercent = FindLowestPercent(group.Rows, AntigravityQuotaPeriod.Weekly);
-            lines.Add(FormatQuotaLine(group.Name!, shortPercent, weeklyPercent, english));
+            var shortPercent = FindLowestPercent(group, AntigravityQuotaPeriod.Short);
+            var weeklyPercent = FindLowestPercent(group, AntigravityQuotaPeriod.Weekly);
+            lines.Add(FormatQuotaLine(group.Key, shortPercent, weeklyPercent, english));
         }
     }
 
@@ -115,8 +113,9 @@ public static class AiUsageTooltipFormatter
             .FirstOrDefault();
     }
 
-    private static string? FormatGroupName(string group)
+    private static string FormatGroupName(AntigravityQuotaRow row, bool english)
     {
+        var group = string.IsNullOrWhiteSpace(row.Group) ? row.Label : row.Group;
         if (group.Contains("Gemini", StringComparison.OrdinalIgnoreCase))
         {
             return "Gemini";
@@ -128,7 +127,10 @@ public static class AiUsageTooltipFormatter
             return "Claude";
         }
 
-        return null;
+        var fallback = string.IsNullOrWhiteSpace(group)
+            ? english ? "Models" : "模型"
+            : group.Trim();
+        return $"Antig {fallback}";
     }
 
     private static string FormatTokenUsage(
