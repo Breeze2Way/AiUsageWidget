@@ -13,6 +13,11 @@ public static class AiUsageTooltipFormatter
         DateTimeOffset now,
         bool english)
     {
+        if ((antigravity is null) != (codex is null))
+        {
+            return FormatSingleProviderDetails(antigravity, codex, now, english);
+        }
+
         var lines = new List<string>();
         if (antigravity is not null)
         {
@@ -23,7 +28,7 @@ public static class AiUsageTooltipFormatter
                 antigravity.SevenDayTokens,
                 antigravity.ThirtyDayTokens,
                 english,
-                commaSeparated: false));
+                separator: "  "));
             AddResetLine(
                 lines,
                 antigravity.FiveHourResetAt,
@@ -46,7 +51,7 @@ public static class AiUsageTooltipFormatter
                 codex.SevenDay.Usage.TotalTokens,
                 codex.ThirtyDay.Usage.TotalTokens,
                 english,
-                commaSeparated: true));
+                separator: ", "));
             AddResetLine(
                 lines,
                 codex.FiveHourResetAt,
@@ -62,6 +67,62 @@ public static class AiUsageTooltipFormatter
                 .ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture));
         }
 
+        return string.Join(Environment.NewLine, lines);
+    }
+
+    private static string FormatSingleProviderDetails(
+        WidgetViewState? antigravity,
+        CodexWidgetViewState? codex,
+        DateTimeOffset now,
+        bool english)
+    {
+        var lines = new List<string>();
+        if (antigravity is not null)
+        {
+            lines.Add(FormatSingleQuotaLine(
+                "Antigravity",
+                antigravity.FiveHourRemainingPercent,
+                antigravity.OfficialRemainingPercent,
+                english));
+            lines.Add(FormatTokenUsage(
+                antigravity.TodayTokens,
+                antigravity.YesterdayTokens,
+                antigravity.SevenDayTokens,
+                antigravity.ThirtyDayTokens,
+                english,
+                english ? ", " : "，"));
+            AddSingleProviderResetLines(
+                lines,
+                antigravity.FiveHourResetAt,
+                antigravity.WeeklyResetAt ?? antigravity.ResetAt,
+                now,
+                english);
+        }
+        else if (codex is not null)
+        {
+            lines.Add(FormatSingleQuotaLine(
+                "Codex",
+                codex.FiveHourRemainingPercent,
+                codex.OfficialRemainingPercent,
+                english));
+            lines.Add(FormatTokenUsage(
+                codex.TodayTokens,
+                codex.YesterdayTokens,
+                codex.SevenDay.Usage.TotalTokens,
+                codex.ThirtyDay.Usage.TotalTokens,
+                english,
+                english ? ", " : "，"));
+            AddSingleProviderResetLines(
+                lines,
+                codex.FiveHourResetAt,
+                codex.WeeklyResetAt ?? codex.ResetAt,
+                now,
+                english);
+        }
+
+        AddBlockSeparator(lines);
+        lines.Add(LatestRefreshAt(antigravity, codex).ToLocalTime()
+            .ToString("yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture));
         return string.Join(Environment.NewLine, lines);
     }
 
@@ -139,17 +200,27 @@ public static class AiUsageTooltipFormatter
         long sevenDay,
         long thirtyDay,
         bool english,
-        bool commaSeparated)
+        string separator)
     {
         var label = english ? "Usage" : "用量";
         var yesterdayLabel = english ? "Yesterday" : "昨日";
         var sevenDayLabel = english ? "7 days" : "7天";
         var thirtyDayLabel = english ? "30 days" : "30天";
-        var separator = commaSeparated ? ", " : "  ";
         return $"{label} : {FormatMillions(today)} " +
                $"[{yesterdayLabel}:{FormatMillions(yesterday)}{separator}" +
                $"{sevenDayLabel}:{FormatMillions(sevenDay)}{separator}" +
                $"{thirtyDayLabel}{(english ? ":" : string.Empty)}{FormatMillions(thirtyDay)}]";
+    }
+
+    private static string FormatSingleQuotaLine(
+        string provider,
+        double? fiveHour,
+        double? weekly,
+        bool english)
+    {
+        var weeklyLabel = english ? "Week" : "周";
+        return $"{provider} : [5h:{FormatPercent(fiveHour, english)}] " +
+               $"[{weeklyLabel}:{FormatPercent(weekly, english)}]";
     }
 
     private static string FormatQuotaLine(
@@ -201,15 +272,41 @@ public static class AiUsageTooltipFormatter
         lines.Add($"{(english ? "Reset" : "重置")} : {string.Join("   ", parts)}");
     }
 
+    private static void AddSingleProviderResetLines(
+        ICollection<string> lines,
+        DateTimeOffset? fiveHourResetAt,
+        DateTimeOffset? weeklyResetAt,
+        DateTimeOffset now,
+        bool english)
+    {
+        if (!fiveHourResetAt.HasValue && !weeklyResetAt.HasValue)
+        {
+            return;
+        }
+
+        lines.Add(english ? "Reset :" : "重置 :");
+        if (fiveHourResetAt.HasValue)
+        {
+            lines.Add($"   5H : {FormatResetTime(fiveHourResetAt.Value, now, english, spaceBeforeRemaining: false)}");
+        }
+
+        if (weeklyResetAt.HasValue)
+        {
+            lines.Add($"Week : {FormatResetTime(weeklyResetAt.Value, now, english)}");
+        }
+    }
+
     private static string FormatResetTime(
         DateTimeOffset resetAt,
         DateTimeOffset now,
-        bool english)
+        bool english,
+        bool spaceBeforeRemaining = true)
     {
         var hours = Math.Max(0, Math.Floor((resetAt - now).TotalHours))
             .ToString("0", CultureInfo.InvariantCulture);
         var remaining = english ? $"{hours}h left" : $"余{hours}h";
-        return $"{resetAt.ToLocalTime():MM-dd HH:mm:ss} [{remaining}]";
+        var separator = spaceBeforeRemaining ? " " : string.Empty;
+        return $"{resetAt.ToLocalTime():MM-dd HH:mm:ss}{separator}[{remaining}]";
     }
 
     private static void AddBlockSeparator(ICollection<string> lines)

@@ -67,6 +67,20 @@ Codex [5h : 95%] [周 : 23%]
 2026-09-23 13:59:25
 ```
 
+When only one provider is visible, its quota and usage are presented as a larger single-provider card. Its text is white.
+
+只显示一个来源时，会使用字号更大的单来源布局，全部文字保持白色。
+
+```text
+Codex : [5h:99%] [周:4%]
+用量 : 3.2M [昨日:56.6M，7天:200.1M，30天1203.9M]
+重置 :
+   5H : 09-24 14:21:14[余3h]
+Week : 09-27 09:29:54 [余70h]
+
+2026-09-24 10:30:35
+```
+
 ## Data and privacy / 数据与隐私
 
 - Antigravity quota is read in read-only mode from its local language server. Its token totals are calculated from local conversation databases using local calendar-day boundaries.

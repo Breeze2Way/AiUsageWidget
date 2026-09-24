@@ -443,17 +443,35 @@ public partial class MainWindow : Window
 
     private void ApplyTooltipDetails(string details)
     {
+        var displayedProviderCount = GetDisplayedProviderCount();
         foreach (var textBlock in new[] { ballDetailsText, hostDetailsText })
         {
+            textBlock.FontSize = displayedProviderCount == 1 ? 14 : 12;
             textBlock.Inlines.Clear();
             foreach (var inline in CreateTooltipInlines(
                          details,
-                         visibleProviders.Count > 1 ? activeProvider : null,
+                         displayedProviderCount > 1 ? activeProvider : null,
                          lastState?.Quota?.SelectedGroup ?? AntigravityQuotaGroup.Unknown))
             {
                 textBlock.Inlines.Add(inline);
             }
         }
+    }
+
+    private int GetDisplayedProviderCount()
+    {
+        var count = 0;
+        if (visibleProviders.Contains(UsageProvider.Antigravity) && lastState is not null)
+        {
+            count++;
+        }
+
+        if (visibleProviders.Contains(UsageProvider.Codex) && lastCodexState is not null)
+        {
+            count++;
+        }
+
+        return count;
     }
 
     internal static IReadOnlyList<Inline> CreateTooltipInlines(
