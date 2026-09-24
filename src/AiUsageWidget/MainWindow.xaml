@@ -110,7 +110,7 @@
                     <Grid.RowDefinitions>
                         <RowDefinition Height="48" />
                         <RowDefinition Height="26" />
-                        <RowDefinition Height="124" />
+                        <RowDefinition Height="154" />
                         <RowDefinition Height="18" />
                         <RowDefinition Height="26" />
                         <RowDefinition Height="168" />
@@ -146,6 +146,7 @@
                         <Grid.RowDefinitions>
                             <RowDefinition Height="34" />
                             <RowDefinition Height="34" />
+                            <RowDefinition Height="34" />
                             <RowDefinition Height="42" />
                         </Grid.RowDefinitions>
                         <Grid.ColumnDefinitions>
@@ -170,12 +171,31 @@
                                  Grid.Column="1"
                                  Style="{StaticResource SettingsTextBoxStyle}"
                                  ToolTip="官方用量查询间隔，范围 10–600 秒" />
-                        <TextBlock x:Name="OpacityLabel"
+                        <TextBlock x:Name="ProviderSelectionLabel"
                                    Grid.Row="2"
+                                   Text="显示来源"
+                                   Foreground="#334155"
+                                   VerticalAlignment="Center" />
+                        <StackPanel Grid.Row="2" Grid.Column="1"
+                                    Orientation="Horizontal"
+                                    Margin="8,0,0,0"
+                                    VerticalAlignment="Center">
+                            <CheckBox x:Name="ShowAntigravityBox"
+                                      Content="Antigravity"
+                                      Foreground="#334155"
+                                      Margin="0,0,22,0"
+                                      VerticalAlignment="Center" />
+                            <CheckBox x:Name="ShowCodexBox"
+                                      Content="Codex"
+                                      Foreground="#334155"
+                                      VerticalAlignment="Center" />
+                        </StackPanel>
+                        <TextBlock x:Name="OpacityLabel"
+                                   Grid.Row="3"
                                    Text="窗口不透明度"
                                    Foreground="#334155"
                                    VerticalAlignment="Center" />
-                        <Grid Grid.Row="2" Grid.Column="1" Margin="8,0,0,0">
+                        <Grid Grid.Row="3" Grid.Column="1" Margin="8,0,0,0">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="54" />

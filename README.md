@@ -14,8 +14,12 @@ AiUsageWidget 是一个轻量的 Windows 用量悬浮球，在同一处展示 An
   重置时间和剩余倒计时直接显示在对应来源的用量行下方，末尾显示最近的数据更新时间。
 - Only the quota row represented by the floating ball is green. For Antigravity this is the currently selected Gemini or Claude model group; for Codex it is the Codex quota row. Every usage, reset, and timestamp row stays white.
   只有悬浮球当前代表的额度行显示为绿色：Antigravity 对应当前选中的 Gemini 或 Claude 模型组，Codex 对应 Codex 额度行；用量、重置和更新时间行均保持白色。
+- Antigravity and Codex can each be enabled in settings. The tooltip shows an enabled provider only while its application is running; if one provider is shown, all its tooltip text is white.
+  设置中可分别勾选 Antigravity 和 Codex。只有已勾选且对应程序正在运行时才显示其用量；只显示一个来源时，全部提示文字均为白色。
 - Foreground ChatGPT/Codex selects Codex. Foreground Antigravity selects Antigravity. Other windows retain the last selection; startup defaults to Antigravity.
   前台为 ChatGPT/Codex 时选 Codex，前台为 Antigravity 时选 Antigravity；其他窗口保持最近一次选择，启动默认选择 Antigravity。
+- Both providers are enabled by default. Codex presence includes either the Codex or ChatGPT desktop process.
+  默认同时启用两个来源。检测 Codex 时，Codex 或 ChatGPT 桌面程序进程均视为正在运行。
 - Chinese and English text follow the language configured in the widget.
   中英文显示完全跟随小工具中的语言设置。
 - Tray controls, settings, startup behavior, multi-monitor placement, single-instance protection, and the current Antigravity icon are retained.

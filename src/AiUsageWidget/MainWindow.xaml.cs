@@ -25,7 +25,7 @@ public partial class MainWindow : Window
     private const double BallWindowSize = 68;
     private const double WaterBallSize = 62;
     internal const double SettingsWindowWidth = 500;
-    internal const double SettingsWindowHeight = 560;
+    internal const double SettingsWindowHeight = 590;
     private const double SettingsWindowGap = 12;
     private const string CodexUsageUrl = "https://chatgpt.com";
     private const string StartupValueName = "AiUsageWidget";
@@ -51,6 +51,7 @@ public partial class MainWindow : Window
     private System.Drawing.Icon? applicationIcon;
     private WidgetSettings settings;
     private UsageProvider activeProvider = UsageProvider.Antigravity;
+    private HashSet<UsageProvider> visibleProviders = [];
     private bool isRefreshing;
     private bool localRefreshPending;
     private WidgetViewState? lastState;
@@ -266,22 +267,33 @@ public partial class MainWindow : Window
     private void ProviderSelectionTimer_Tick(object? sender, EventArgs e)
     {
         var previousProvider = activeProvider;
+        var previousVisibleProviders = visibleProviders.ToHashSet();
         SelectActiveProvider();
-        if (previousProvider != activeProvider)
+        if (previousProvider != activeProvider ||
+            !previousVisibleProviders.SetEquals(visibleProviders))
         {
             ApplyActiveProvider();
-            if (lastDetails is not null)
-            {
-                SetDetails(lastDetails);
-            }
+            SetDetails(FormatVisibleDetails(DateTimeOffset.Now));
         }
     }
 
     private void SelectActiveProvider()
     {
+        var runningProviders = foregroundProcessReader.ReadRunningProviders();
+        visibleProviders = runningProviders
+            .Where(provider => IsProviderEnabled(provider))
+            .ToHashSet();
         activeProvider = UsageProviderSelector.Select(
             foregroundProcessReader.ReadForegroundProcessName(),
-            activeProvider);
+            activeProvider,
+            visibleProviders);
+    }
+
+    private bool IsProviderEnabled(UsageProvider provider)
+    {
+        return provider == UsageProvider.Antigravity
+            ? settings.ShowAntigravity
+            : settings.ShowCodex;
     }
 
     private void OfficialRetryTimer_Tick(object? sender, EventArgs e)
@@ -373,19 +385,30 @@ public partial class MainWindow : Window
 
     private void ApplyCombinedSnapshot()
     {
+        SelectActiveProvider();
         ApplyActiveProvider();
-        SetDetails(AiUsageTooltipFormatter.FormatDetails(
-            lastState,
-            lastCodexState,
-            DateTimeOffset.Now,
-            english: WidgetLanguage.IsEnglish(settings.Language)));
+        SetDetails(FormatVisibleDetails(DateTimeOffset.Now));
+    }
+
+    private string FormatVisibleDetails(DateTimeOffset now)
+    {
+        return AiUsageTooltipFormatter.FormatDetails(
+            visibleProviders.Contains(UsageProvider.Antigravity) ? lastState : null,
+            visibleProviders.Contains(UsageProvider.Codex) ? lastCodexState : null,
+            now,
+            english: WidgetLanguage.IsEnglish(settings.Language));
     }
 
     private void ApplyActiveProvider()
     {
         double? fiveHourPercent;
         double? weeklyPercent;
-        if (activeProvider == UsageProvider.Codex)
+        if (!visibleProviders.Contains(activeProvider))
+        {
+            fiveHourPercent = null;
+            weeklyPercent = null;
+        }
+        else if (activeProvider == UsageProvider.Codex)
         {
             fiveHourPercent = lastCodexState?.FiveHourRemainingPercent;
             weeklyPercent = lastCodexState?.OfficialRemainingPercent;
@@ -414,11 +437,7 @@ public partial class MainWindow : Window
     {
         if (lastDetails is not null && (lastState is not null || lastCodexState is not null))
         {
-            SetDetails(AiUsageTooltipFormatter.FormatDetails(
-                lastState,
-                lastCodexState,
-                DateTimeOffset.Now,
-                english: WidgetLanguage.IsEnglish(settings.Language)));
+            SetDetails(FormatVisibleDetails(DateTimeOffset.Now));
         }
     }
 
@@ -429,7 +448,7 @@ public partial class MainWindow : Window
             textBlock.Inlines.Clear();
             foreach (var inline in CreateTooltipInlines(
                          details,
-                         activeProvider,
+                         visibleProviders.Count > 1 ? activeProvider : null,
                          lastState?.Quota?.SelectedGroup ?? AntigravityQuotaGroup.Unknown))
             {
                 textBlock.Inlines.Add(inline);
@@ -439,13 +458,13 @@ public partial class MainWindow : Window
 
     internal static IReadOnlyList<Inline> CreateTooltipInlines(
         string details,
-        UsageProvider activeProvider,
+        UsageProvider? highlightedProvider,
         AntigravityQuotaGroup selectedAntigravityGroup)
     {
         var inlines = new List<Inline>();
         var lines = AiUsageTooltipPresentation.Build(
             details,
-            activeProvider,
+            highlightedProvider,
             selectedAntigravityGroup);
         for (var index = 0; index < lines.Count; index++)
         {
@@ -467,6 +486,20 @@ public partial class MainWindow : Window
         }
 
         return inlines;
+    }
+
+    internal static IReadOnlyList<Inline> CreateTooltipInlines(
+        string details,
+        string? resetDetails,
+        UsageProvider activeProvider)
+    {
+        var combinedDetails = resetDetails is null
+            ? details
+            : string.Join(Environment.NewLine, details, string.Empty, resetDetails);
+        return CreateTooltipInlines(
+            combinedDetails,
+            activeProvider,
+            AntigravityQuotaGroup.Unknown);
     }
 
     internal static System.Windows.Controls.TextBlock CreateDetailsTextBlock()
@@ -692,6 +725,8 @@ public partial class MainWindow : Window
         OpacitySlider.Value = settings.Opacity * 100;
         TopmostBox.IsChecked = settings.Topmost;
         AutoStartBox.IsChecked = settings.AutoStart;
+        ShowAntigravityBox.IsChecked = settings.ShowAntigravity;
+        ShowCodexBox.IsChecked = settings.ShowCodex;
         WeeklyRingModeBox.SelectedIndex = settings.WeeklyRingGradientEnabled ? 1 : 0;
         WeeklyRingStartColorBox.Text = settings.WeeklyRingColor;
         WeeklyRingEndColorBox.Text = settings.WeeklyRingGradientColor;
@@ -754,6 +789,8 @@ public partial class MainWindow : Window
             Opacity = OpacitySlider.Value / 100,
             Topmost = TopmostBox.IsChecked == true,
             AutoStart = AutoStartBox.IsChecked == true,
+            ShowAntigravity = ShowAntigravityBox.IsChecked == true,
+            ShowCodex = ShowCodexBox.IsChecked == true,
             WeeklyRingColor = ColorParser.ToHex(startColor),
             WeeklyRingGradientColor = ColorParser.ToHex(endColor),
             WeeklyRingTrackColor = ColorParser.ToHex(trackColor),
@@ -767,6 +804,7 @@ public partial class MainWindow : Window
         Opacity = settings.Opacity;
         ConfigureRefreshTimer();
         SetAutoStart(settings.AutoStart);
+        ApplyCombinedSnapshot();
         ShowDashboard();
         RefreshAsync(refreshOfficial: false);
     }
@@ -901,11 +939,20 @@ public partial class MainWindow : Window
 
         SettingsTitleText.Text = isEnglish ? "Widget settings" : "小工具设置";
         SettingsSubtitleText.Text = isEnglish
-            ? "Adjust refresh and ring appearance"
-            : "调整数据刷新与外圈显示样式";
+            ? "Choose visible apps and adjust the widget"
+            : "选择显示来源并调整悬浮球样式";
         DataRefreshSectionText.Text = isEnglish ? "Data and refresh" : "数据与刷新";
         WeeklyBudgetLabel.Text = isEnglish ? "Codex weekly budget (tokens)" : "Codex 周预算（token）";
         RefreshIntervalLabel.Text = isEnglish ? "Refresh interval (seconds)" : "刷新间隔（秒）";
+        ProviderSelectionLabel.Text = isEnglish ? "Show usage for" : "显示来源";
+        ShowAntigravityBox.Content = "Antigravity";
+        ShowCodexBox.Content = "Codex";
+        ShowAntigravityBox.ToolTip = isEnglish
+            ? "Show Antigravity usage only while Antigravity is running."
+            : "仅在 Antigravity 正在运行时显示其用量。";
+        ShowCodexBox.ToolTip = isEnglish
+            ? "Show Codex usage while Codex or ChatGPT is running."
+            : "Codex 或 ChatGPT 正在运行时显示 Codex 用量。";
         OpacityLabel.Text = isEnglish ? "Window opacity" : "窗口不透明度";
         RingStyleSectionText.Text = isEnglish ? "Ring style" : "外圈样式";
         RingModeLabel.Text = isEnglish ? "Color mode" : "颜色模式";

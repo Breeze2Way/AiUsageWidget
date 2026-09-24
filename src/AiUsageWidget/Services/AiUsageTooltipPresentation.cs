@@ -8,14 +8,26 @@ public static class AiUsageTooltipPresentation
 {
     public static IReadOnlyList<AiUsageTooltipLine> Build(
         string details,
-        UsageProvider activeProvider,
+        UsageProvider? highlightedProvider,
         AntigravityQuotaGroup selectedAntigravityGroup)
     {
         return SplitLines(details)
             .Select(line => new AiUsageTooltipLine(
                 line,
-                IsSelectedQuotaLine(line, activeProvider, selectedAntigravityGroup)))
+                highlightedProvider.HasValue &&
+                IsSelectedQuotaLine(line, highlightedProvider.Value, selectedAntigravityGroup)))
             .ToArray();
+    }
+
+    public static IReadOnlyList<AiUsageTooltipLine> Build(
+        string details,
+        string? resetDetails,
+        UsageProvider activeProvider)
+    {
+        var combinedDetails = resetDetails is null
+            ? details
+            : string.Join(Environment.NewLine, details, string.Empty, resetDetails);
+        return Build(combinedDetails, activeProvider, AntigravityQuotaGroup.Unknown);
     }
 
     private static bool IsSelectedQuotaLine(

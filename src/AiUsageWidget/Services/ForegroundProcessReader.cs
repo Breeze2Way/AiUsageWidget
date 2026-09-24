@@ -1,10 +1,27 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using AiUsageWidget.Models;
 
 namespace AiUsageWidget.Services;
 
 public sealed class ForegroundProcessReader
 {
+    public IReadOnlySet<UsageProvider> ReadRunningProviders()
+    {
+        var providers = new HashSet<UsageProvider>();
+        if (HasRunningProcess("Antigravity"))
+        {
+            providers.Add(UsageProvider.Antigravity);
+        }
+
+        if (HasRunningProcess("Codex") || HasRunningProcess("ChatGPT"))
+        {
+            providers.Add(UsageProvider.Codex);
+        }
+
+        return providers;
+    }
+
     public string? ReadForegroundProcessName()
     {
         try
@@ -21,6 +38,31 @@ public sealed class ForegroundProcessReader
         catch
         {
             return null;
+        }
+    }
+
+    private static bool HasRunningProcess(string processName)
+    {
+        Process[] processes;
+        try
+        {
+            processes = Process.GetProcessesByName(processName);
+        }
+        catch
+        {
+            return false;
+        }
+
+        try
+        {
+            return processes.Length > 0;
+        }
+        finally
+        {
+            foreach (var process in processes)
+            {
+                process.Dispose();
+            }
         }
     }
 

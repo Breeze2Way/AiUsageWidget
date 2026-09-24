@@ -20,4 +20,8 @@ public sealed record WidgetSettings(
     public bool WeeklyRingGradientEnabled { get; init; } = true;
 
     public string Language { get; init; } = "zh-CN";
+
+    public bool ShowAntigravity { get; init; } = true;
+
+    public bool ShowCodex { get; init; } = true;
 }
