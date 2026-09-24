@@ -287,7 +287,7 @@ public static class AiUsageTooltipFormatter
         lines.Add(english ? "Reset :" : "重置 :");
         if (fiveHourResetAt.HasValue)
         {
-            lines.Add($"   5H : {FormatResetTime(fiveHourResetAt.Value, now, english, spaceBeforeRemaining: false)}");
+            lines.Add($"5H   : {FormatResetTime(fiveHourResetAt.Value, now, english)}");
         }
 
         if (weeklyResetAt.HasValue)

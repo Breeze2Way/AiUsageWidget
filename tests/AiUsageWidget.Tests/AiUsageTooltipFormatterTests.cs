@@ -52,6 +52,30 @@ public sealed class AiUsageTooltipFormatterTests
     }
 
     [Fact]
+    public void AlignsSingleProviderResetLabelsAndLeavesSpaceBeforeRemainingTime()
+    {
+        var refreshedAt = new DateTimeOffset(2026, 9, 24, 10, 30, 35, TimeSpan.FromHours(8));
+        var codex = CreateCodexState(refreshedAt) with
+        {
+            FiveHourResetAt = new DateTimeOffset(2026, 9, 24, 14, 21, 14, TimeSpan.FromHours(8)),
+            WeeklyResetAt = new DateTimeOffset(2026, 9, 27, 9, 29, 54, TimeSpan.FromHours(8))
+        };
+
+        var details = AiUsageTooltipFormatter.FormatDetails(
+            antigravity: null,
+            codex,
+            new DateTimeOffset(2026, 9, 24, 10, 30, 35, TimeSpan.FromHours(8)),
+            english: false);
+
+        Assert.Contains(
+            string.Join(Environment.NewLine,
+                "重置 :",
+                "5H   : 09-24 14:21:14 [余3h]",
+                "Week : 09-27 09:29:54 [余70h]"),
+            details);
+    }
+
+    [Fact]
     public void KeepsTheRemainingResetPeriodWhenFiveHourResetIsUnavailable()
     {
         var refreshedAt = new DateTimeOffset(2026, 9, 23, 13, 59, 25, TimeSpan.FromHours(8));
@@ -96,7 +120,7 @@ public sealed class AiUsageTooltipFormatterTests
     }
 
     [Fact]
-    public void PreservesAnUnknownAntigravityGroupWithAProviderQualifiedName()
+    public void PreservesAnUnknownAntigravityGroupWithAProviderQualifiedNameInDualProviderLayout()
     {
         var refreshedAt = new DateTimeOffset(2026, 9, 23, 13, 59, 25, TimeSpan.FromHours(8));
         var antigravity = CreateAntigravityState(refreshedAt) with
@@ -115,7 +139,7 @@ public sealed class AiUsageTooltipFormatterTests
 
         var details = AiUsageTooltipFormatter.FormatDetails(
             antigravity,
-            codex: null,
+            CreateCodexState(refreshedAt),
             refreshedAt,
             english: false);
 

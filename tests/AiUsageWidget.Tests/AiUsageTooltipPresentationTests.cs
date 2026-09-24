@@ -57,6 +57,32 @@ public sealed class AiUsageTooltipPresentationTests
     }
 
     [Fact]
+    public void HighlightsSingleProviderCodexQuotaRowForCodex()
+    {
+        var details = "Codex : [5h:99%] [周:4%]";
+
+        var lines = AiUsageTooltipPresentation.Build(
+            details,
+            UsageProvider.Codex,
+            AntigravityQuotaGroup.Unknown);
+
+        Assert.True(Assert.Single(lines).IsHighlighted);
+    }
+
+    [Fact]
+    public void HighlightsSingleProviderAntigravityQuotaRowForAntigravity()
+    {
+        var details = "Antigravity : [5h:99%] [周:4%]";
+
+        var lines = AiUsageTooltipPresentation.Build(
+            details,
+            UsageProvider.Antigravity,
+            AntigravityQuotaGroup.Unknown);
+
+        Assert.True(Assert.Single(lines).IsHighlighted);
+    }
+
+    [Fact]
     public void UnknownAntigravitySelectionHighlightsNoQuotaRow()
     {
         var lines = AiUsageTooltipPresentation.Build(

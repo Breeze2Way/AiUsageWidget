@@ -37,7 +37,13 @@ public static class AiUsageTooltipPresentation
     {
         if (activeProvider == UsageProvider.Codex)
         {
-            return line.StartsWith("Codex [", StringComparison.Ordinal);
+            return line.StartsWith("Codex [", StringComparison.Ordinal) ||
+                   line.StartsWith("Codex : [", StringComparison.Ordinal);
+        }
+
+        if (line.StartsWith("Antigravity : [", StringComparison.Ordinal))
+        {
+            return true;
         }
 
         return selectedAntigravityGroup switch

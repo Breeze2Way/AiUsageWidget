@@ -450,7 +450,7 @@ public partial class MainWindow : Window
             textBlock.Inlines.Clear();
             foreach (var inline in CreateTooltipInlines(
                          details,
-                         displayedProviderCount > 1 ? activeProvider : null,
+                         displayedProviderCount > 0 ? activeProvider : null,
                          lastState?.Quota?.SelectedGroup ?? AntigravityQuotaGroup.Unknown))
             {
                 textBlock.Inlines.Add(inline);
