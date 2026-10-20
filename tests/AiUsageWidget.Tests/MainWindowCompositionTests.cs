@@ -17,7 +17,7 @@ public sealed class MainWindowCompositionTests
                 var inlines = MainWindow.CreateTooltipInlines(
                     string.Join(Environment.NewLine,
                         "Gemini [5h : 80%] [周 : 70%]",
-                        "用量 : 1.0M [昨日:2.0M  7天:3.0M  30天4.0M]",
+                        "用量 : 1.0M [昨日:2.0M]",
                         "Codex [5h : 60%] [周 : 50%]"),
                     UsageProvider.Antigravity,
                     AntigravityQuotaGroup.Gemini);

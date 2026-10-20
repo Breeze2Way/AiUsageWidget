@@ -25,10 +25,7 @@ public static class AiUsageTooltipFormatter
             lines.Add(FormatTokenUsage(
                 antigravity.TodayTokens,
                 antigravity.YesterdayTokens,
-                antigravity.SevenDayTokens,
-                antigravity.ThirtyDayTokens,
-                english,
-                separator: "  "));
+                english));
             AddResetLine(
                 lines,
                 antigravity.FiveHourResetAt,
@@ -48,10 +45,7 @@ public static class AiUsageTooltipFormatter
             lines.Add(FormatTokenUsage(
                 codex.TodayTokens,
                 codex.YesterdayTokens,
-                codex.SevenDay.Usage.TotalTokens,
-                codex.ThirtyDay.Usage.TotalTokens,
-                english,
-                separator: ", "));
+                english));
             AddResetLine(
                 lines,
                 codex.FiveHourResetAt,
@@ -87,10 +81,7 @@ public static class AiUsageTooltipFormatter
             lines.Add(FormatTokenUsage(
                 antigravity.TodayTokens,
                 antigravity.YesterdayTokens,
-                antigravity.SevenDayTokens,
-                antigravity.ThirtyDayTokens,
-                english,
-                english ? ", " : "，"));
+                english));
             AddSingleProviderResetLines(
                 lines,
                 antigravity.FiveHourResetAt,
@@ -108,10 +99,7 @@ public static class AiUsageTooltipFormatter
             lines.Add(FormatTokenUsage(
                 codex.TodayTokens,
                 codex.YesterdayTokens,
-                codex.SevenDay.Usage.TotalTokens,
-                codex.ThirtyDay.Usage.TotalTokens,
-                english,
-                english ? ", " : "，"));
+                english));
             AddSingleProviderResetLines(
                 lines,
                 codex.FiveHourResetAt,
@@ -197,19 +185,12 @@ public static class AiUsageTooltipFormatter
     private static string FormatTokenUsage(
         long today,
         long yesterday,
-        long sevenDay,
-        long thirtyDay,
-        bool english,
-        string separator)
+        bool english)
     {
         var label = english ? "Usage" : "用量";
         var yesterdayLabel = english ? "Yesterday" : "昨日";
-        var sevenDayLabel = english ? "7 days" : "7天";
-        var thirtyDayLabel = english ? "30 days" : "30天";
         return $"{label} : {FormatMillions(today)} " +
-               $"[{yesterdayLabel}:{FormatMillions(yesterday)}{separator}" +
-               $"{sevenDayLabel}:{FormatMillions(sevenDay)}{separator}" +
-               $"{thirtyDayLabel}{(english ? ":" : string.Empty)}{FormatMillions(thirtyDay)}]";
+               $"[{yesterdayLabel}:{FormatMillions(yesterday)}]";
     }
 
     private static string FormatSingleQuotaLine(

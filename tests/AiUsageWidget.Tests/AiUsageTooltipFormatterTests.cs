@@ -21,11 +21,11 @@ public sealed class AiUsageTooltipFormatterTests
             string.Join(Environment.NewLine,
                 "Gemini [5h : 92.8%] [周 : 33.6%]",
                 "Claude [5h : 100%] [周 : 19.1%]",
-                "用量 : 7.1M [昨日:125.6M  7天:169.4M  30天1175.5M]",
+                "用量 : 7.1M [昨日:125.6M]",
                 "重置 : 09-23 15:21:00 [余1h]   Week :09-24 10:15:00 [余20h]",
                 string.Empty,
                 "Codex [5h : 95%] [周 : 23%]",
-                "用量 : 29.1M [昨日:73.7M, 7天:169.4M, 30天1175.5M]",
+                "用量 : 29.1M [昨日:73.7M]",
                 "重置 : 09-23 15:54:00 [余1h]   Week :09-27 09:29:00 [余91h]",
                 string.Empty,
                 "2026-09-23 13:59:25"),
@@ -44,7 +44,7 @@ public sealed class AiUsageTooltipFormatterTests
             english: true);
 
         Assert.Contains("Gemini [5h : 92.8%] [Week : 33.6%]", details);
-        Assert.Contains("Usage : 7.1M [Yesterday:125.6M  7 days:169.4M  30 days:1175.5M]", details);
+        Assert.Contains("Usage : 7.1M [Yesterday:125.6M]", details);
         Assert.Contains("Reset : 09-23 15:21:00 [1h left]   Week :09-24 10:15:00 [20h left]", details);
         Assert.EndsWith("2026-09-23 13:59:25", details);
         Assert.DoesNotContain("昨日", details);

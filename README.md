@@ -8,14 +8,14 @@ AiUsageWidget 是一个轻量的 Windows 用量悬浮球，在同一处展示 An
 
 - Floating center/fill shows the active provider's five-hour remaining percentage; the outer ring shows that provider's weekly remaining percentage.
   悬浮球中心和填充显示当前激活来源的五小时剩余比例，外环显示同一来源的周剩余比例。
-- A compact, wide tooltip shows today, yesterday, 7-day, and 30-day token totals for both providers, plus Gemini, Claude, and Codex quota rows.
-  宽版紧凑悬停详情分别显示两种来源的今日、昨日、7 天和 30 天 token 总量，并列出 Gemini、Claude 与 Codex 额度。
+- A compact, wide tooltip shows today's and yesterday's token totals for both providers, plus Gemini, Claude, and Codex quota rows.
+  宽版紧凑悬停详情分别显示两种来源的今日和昨日 token 总量，并列出 Gemini、Claude 与 Codex 额度。
 - Reset times and countdowns appear directly below each provider's usage row, followed by the latest data refresh timestamp.
   重置时间和剩余倒计时直接显示在对应来源的用量行下方，末尾显示最近的数据更新时间。
 - Only the quota row represented by the floating ball is green. For Antigravity this is the currently selected Gemini or Claude model group; for Codex it is the Codex quota row. Every usage, reset, and timestamp row stays white.
   只有悬浮球当前代表的额度行显示为绿色：Antigravity 对应当前选中的 Gemini 或 Claude 模型组，Codex 对应 Codex 额度行；用量、重置和更新时间行均保持白色。
-- Antigravity and Codex can each be enabled in settings. The tooltip shows an enabled provider only while its application is running; if one provider is shown, all its tooltip text is white.
-  设置中可分别勾选 Antigravity 和 Codex。只有已勾选且对应程序正在运行时才显示其用量；只显示一个来源时，全部提示文字均为白色。
+- Antigravity and Codex can each be enabled in settings. The tooltip shows an enabled provider only while its application is running; when one provider is shown, its quota row is green and the other rows are white.
+  设置中可分别勾选 Antigravity 和 Codex。只有已勾选且对应程序正在运行时才显示其用量；只显示一个来源时，额度行显示绿色，其余行保持白色。
 - Foreground ChatGPT/Codex selects Codex. Foreground Antigravity selects Antigravity. Other windows retain the last selection; startup defaults to Antigravity.
   前台为 ChatGPT/Codex 时选 Codex，前台为 Antigravity 时选 Antigravity；其他窗口保持最近一次选择，启动默认选择 Antigravity。
 - Both providers are enabled by default. Codex presence includes either the Codex or ChatGPT desktop process.
@@ -57,25 +57,25 @@ Chinese mode uses the following compact layout; English mode uses the same group
 ```text
 Gemini [5h : 92.8%] [周 : 33.6%]
 Claude [5h : 100%] [周 : 19.1%]
-用量 : 7.1M [昨日:125.6M  7天:169.4M  30天1175.5M]
+用量 : 7.1M [昨日:125.6M]
 重置 : 09-23 15:21:00 [余1h]   Week :09-24 10:15:00 [余20h]
 
 Codex [5h : 95%] [周 : 23%]
-用量 : 29.1M [昨日:73.7M, 7天:169.4M, 30天1175.5M]
+用量 : 29.1M [昨日:73.7M]
 重置 : 09-23 15:54:00 [余1h]   Week :09-27 09:29:00 [余91h]
 
 2026-09-23 13:59:25
 ```
 
-When only one provider is visible, its quota and usage are presented as a larger single-provider card. Its text is white.
+When only one provider is visible, its quota and usage are presented as a larger single-provider card. Its quota row is green and the other rows are white.
 
-只显示一个来源时，会使用字号更大的单来源布局，全部文字保持白色。
+只显示一个来源时，会使用字号更大的单来源布局，额度行显示绿色，其余行保持白色。
 
 ```text
 Codex : [5h:99%] [周:4%]
-用量 : 3.2M [昨日:56.6M，7天:200.1M，30天1203.9M]
+用量 : 3.2M [昨日:56.6M]
 重置 :
-   5H : 09-24 14:21:14[余3h]
+5H   : 09-24 14:21:14 [余3h]
 Week : 09-27 09:29:54 [余70h]
 
 2026-09-24 10:30:35
