@@ -10,7 +10,7 @@ public sealed class DailyConversationScheduler
     private readonly TimeProvider clock;
     private readonly SemaphoreSlim tickGate = new(1, 1);
     private readonly object stateLock = new();
-    private readonly HashSet<Guid> exhausted = [];
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<Guid, byte> exhausted = new();
     private List<ConversationRun> runs = [];
     private string? previousTime;
     private DateTime? suppressedMinute;
@@ -105,7 +105,7 @@ public sealed class DailyConversationScheduler
     {
         foreach (var original in Runs.Where(r => r.App == adapter.App && r.Stage == ConversationRunStage.CleanupPending))
         {
-            if (FaultCode is not null || ct.IsCancellationRequested || exhausted.Contains(original.RunId) ||
+            if (FaultCode is not null || ct.IsCancellationRequested || exhausted.ContainsKey(original.RunId) ||
                 original.CleanupDueAt is not { } due || clock.GetUtcNow() < due ||
                 original.RetryAt is { } retry && clock.GetUtcNow() < retry) continue;
             var run = original;
@@ -124,7 +124,7 @@ public sealed class DailyConversationScheduler
             catch (Exception)
             {
                 var attempts = run.CleanupAttempts + 1;
-                lock (stateLock) { if (attempts >= 3) exhausted.Add(run.RunId); }
+                if (attempts >= 3) exhausted.TryAdd(run.RunId, 0);
                 Save(run with { CleanupAttempts = attempts, RetryAt = clock.GetUtcNow().AddSeconds(15), ResultCode = "cleanup_failed" });
             }
         }
