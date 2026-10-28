@@ -104,7 +104,9 @@ public sealed class SettingsStore
             WeeklyRingColor = weeklyRingColor,
             WeeklyRingGradientColor = weeklyRingGradientColor,
             WeeklyRingTrackColor = weeklyRingTrackColor,
-            Language = WidgetLanguage.Normalize(settings.Language)
+            Language = WidgetLanguage.Normalize(settings.Language),
+            DailyConversationTime = Scheduling.DailyConversationOptions.TryParseTime(settings.DailyConversationTime, out var dailyTime)
+                ? dailyTime.ToString("HH:mm", System.Globalization.CultureInfo.InvariantCulture) : "05:30"
         };
     }
 }

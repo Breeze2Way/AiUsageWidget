@@ -24,4 +24,9 @@ public sealed record WidgetSettings(
     public bool ShowAntigravity { get; init; } = true;
 
     public bool ShowCodex { get; init; } = true;
+
+    public bool DailyConversationEnabled { get; init; }
+    public string DailyConversationTime { get; init; } = "05:30";
+    public bool DailyConversationCodex { get; init; } = true;
+    public bool DailyConversationAntigravity { get; init; } = true;
 }
