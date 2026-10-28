@@ -92,6 +92,15 @@ public sealed class ConversationAdapterTests
         Assert.Empty(rpc.Calls);
     }
 
+    [Theory]
+    [InlineData("{\"numTotalSteps\":5,\"trajectory\":{\"cascadeId\":\"01a180b5-9a42-7cc3-98a9-ab3cced3b4bb\"}}")]
+    [InlineData("{\"trajectory\":{\"cascadeId\":\"01a180b5-9a42-7cc3-98a9-ab3cced3b4bb\",\"steps\":[{\"type\":\"CORTEX_STEP_TYPE_USER_INPUT\"}]}}")]
+    public async Task AntigravityMalformedOrTruncatedHistoryIsPreserved(string json)
+    {
+        var rpc = new FakeRpc((_, _) => J(json));
+        Assert.False(await new AntigravityConversationAdapter(rpc, _ => Task.CompletedTask).CanSafelyDeleteAsync(Owned(ConversationApp.Antigravity), default));
+    }
+
     [Fact]
     public async Task RemoteFailureCannotReportSendSuccess()
     {

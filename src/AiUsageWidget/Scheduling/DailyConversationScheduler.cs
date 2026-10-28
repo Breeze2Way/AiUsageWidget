@@ -11,10 +11,12 @@ public sealed class DailyConversationScheduler
     private readonly SemaphoreSlim tickGate = new(1, 1);
     private readonly object stateLock = new();
     private readonly System.Collections.Concurrent.ConcurrentDictionary<Guid, byte> exhausted = new();
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<Guid, long> sendTimestamps = new();
     private List<ConversationRun> runs = [];
     private string? previousTime;
     private DateTime? suppressedMinute;
     public string? FaultCode { get; private set; }
+    public CreatedConversation? UnpersistedConversation { get; private set; }
     public event EventHandler? StatusChanged;
     public IReadOnlyList<ConversationRun> Runs { get { lock (stateLock) return runs.ToArray(); } }
 
@@ -52,8 +54,11 @@ public sealed class DailyConversationScheduler
             if (FaultCode is not null) return;
             var local = clock.GetLocalNow();
             var minute = new DateTime(local.Year, local.Month, local.Day, local.Hour, local.Minute, 0);
-            if (previousTime is not null && previousTime != settings.DailyConversationTime) suppressedMinute = minute;
-            previousTime = settings.DailyConversationTime;
+            if (!manual)
+            {
+                if (previousTime is not null && previousTime != settings.DailyConversationTime) suppressedMinute = minute;
+                previousTime = settings.DailyConversationTime;
+            }
             await Task.WhenAll(adapters.Values.Select(a => CleanupAsync(a, ct))).ConfigureAwait(false);
             if (FaultCode is not null || ct.IsCancellationRequested) return;
             if (!DailyConversationOptions.TryParseTime(settings.DailyConversationTime, out var time)) return;
@@ -82,15 +87,17 @@ public sealed class DailyConversationScheduler
             ct.ThrowIfCancellationRequested();
             var conversation = await adapter.CreateAndOpenAsync(run.RunId, ct).ConfigureAwait(false);
             run = run with { Conversation = conversation, Stage = ConversationRunStage.Created, ResultCode = "created", CleanupDueAt = clock.GetUtcNow().AddSeconds(60) };
-            if (!Save(run)) return; // Do not send without durable exact-ID ownership.
+            if (!Save(run)) { UnpersistedConversation = conversation; return; } // Never send without durable ownership.
             run = run with { Stage = ConversationRunStage.Sending, SendStartedAt = clock.GetUtcNow(), ResultCode = "sending" };
             if (!Save(run)) return;
             await adapter.SendAsync(conversation, Prompt, ct).ConfigureAwait(false);
             var sent = clock.GetUtcNow();
+            sendTimestamps[run.RunId] = clock.GetTimestamp();
             Save(run with { Stage = ConversationRunStage.CleanupPending, SentAt = sent, CleanupDueAt = sent.AddSeconds(60), ResultCode = "waiting_cleanup" });
         }
         catch (Exception)
         {
+            if (run.Conversation is not null) sendTimestamps[run.RunId] = clock.GetTimestamp();
             // Transport errors can mean accepted-but-unacknowledged. Never resend.
             Save(run with
             {
@@ -106,7 +113,9 @@ public sealed class DailyConversationScheduler
         foreach (var original in Runs.Where(r => r.App == adapter.App && r.Stage == ConversationRunStage.CleanupPending))
         {
             if (FaultCode is not null || ct.IsCancellationRequested || exhausted.ContainsKey(original.RunId) ||
-                original.CleanupDueAt is not { } due || clock.GetUtcNow() < due ||
+                original.CleanupDueAt is not { } due ||
+                (sendTimestamps.TryGetValue(original.RunId, out var sentTimestamp)
+                    ? clock.GetElapsedTime(sentTimestamp) < TimeSpan.FromSeconds(60) : clock.GetUtcNow() < due) ||
                 original.RetryAt is { } retry && clock.GetUtcNow() < retry) continue;
             var run = original;
             try

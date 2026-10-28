@@ -104,6 +104,28 @@ public sealed class DailyConversationSchedulerTests
         await f.Scheduler.TickAsync(Enabled with { DailyConversationAntigravity = false }, default);
         Assert.Empty(f.Codex.Messages);
         Assert.NotNull(f.Scheduler.FaultCode);
+        Assert.NotNull(f.Scheduler.UnpersistedConversation);
+    }
+
+    [Fact]
+    public async Task WallClockForwardDoesNotDeleteBeforeSixtyRealSeconds()
+    {
+        var f = new Fixture(); await f.Scheduler.TickAsync(Enabled, default);
+        f.Clock.ChangeWallClock(3600);
+        await f.Scheduler.TickAsync(new(), default);
+        Assert.Empty(f.Codex.Deleted);
+        f.Clock.Advance(60); await f.Scheduler.TickAsync(new(), default);
+        Assert.Single(f.Codex.Deleted);
+    }
+
+    [Fact]
+    public async Task ManualDraftTimeDoesNotSuppressSavedSchedule()
+    {
+        var f = new Fixture(); f.Clock.Advance(-60);
+        await f.Scheduler.TickAsync(new(), default);
+        await f.Scheduler.TestNowAsync(Enabled with { DailyConversationTime = "06:00" }, default);
+        f.Clock.Advance(60); await f.Scheduler.TickAsync(Enabled, default);
+        Assert.Equal(2, f.Codex.Messages.Count);
     }
 
     [Fact]
@@ -154,9 +176,13 @@ public sealed class DailyConversationSchedulerTests
     private sealed class TestClock : TimeProvider
     {
         private DateTimeOffset now = DateTimeOffset.Parse("2026-10-28T05:30:00+08:00");
+        private long timestamp;
         public override DateTimeOffset GetUtcNow() => now.ToUniversalTime();
+        public override long GetTimestamp() => timestamp;
+        public override long TimestampFrequency => TimeSpan.TicksPerSecond;
         public override TimeZoneInfo LocalTimeZone => TimeZoneInfo.FindSystemTimeZoneById("China Standard Time");
-        public void Advance(int seconds) => now = now.AddSeconds(seconds);
+        public void Advance(int seconds) { now = now.AddSeconds(seconds); timestamp += Math.Max(0, seconds) * TimeSpan.TicksPerSecond; }
+        public void ChangeWallClock(int seconds) => now = now.AddSeconds(seconds);
     }
     private sealed class MemoryStore : IConversationRunStore
     {

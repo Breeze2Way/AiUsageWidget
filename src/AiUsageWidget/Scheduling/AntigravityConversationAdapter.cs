@@ -63,13 +63,19 @@ public sealed class AntigravityConversationAdapter : IConversationAdapter, IDisp
             var result = await rpc.CallAsync("GetCascadeTrajectory", new { cascadeId = conversation.ThreadId }, ct).ConfigureAwait(false);
             var trajectory = result.GetProperty("trajectory");
             if (trajectory.GetProperty("cascadeId").GetString() != conversation.ThreadId) return false;
-            if (!trajectory.TryGetProperty("steps", out var steps)) return true;
+            if (!trajectory.TryGetProperty("steps", out var steps))
+                return !result.TryGetProperty("numTotalSteps", out var count) || count.GetInt32() == 0;
+            if (steps.ValueKind != JsonValueKind.Array) return false;
             if (result.TryGetProperty("numTotalSteps", out var total) && total.GetInt32() > steps.GetArrayLength()) return false;
             var users = 0;
             foreach (var step in steps.EnumerateArray())
             {
                 if (step.TryGetProperty("type", out var type) && (type.GetString() ?? "").Contains("SUBAGENT", StringComparison.OrdinalIgnoreCase)) return false;
-                if (!step.TryGetProperty("userInput", out var input)) continue;
+                if (!step.TryGetProperty("userInput", out var input))
+                {
+                    if (step.TryGetProperty("type", out var missingType) && missingType.GetString() == "CORTEX_STEP_TYPE_USER_INPUT") return false;
+                    continue;
+                }
                 if (++users > 1 || !input.TryGetProperty("userResponse", out var text) || text.GetString() != DailyConversationScheduler.Prompt) return false;
             }
             return true;

@@ -127,6 +127,7 @@ public partial class MainWindow : Window
         resetCountdownTimer.Start();
         RefreshAsync(refreshOfficial: false);
         officialRetryTimer.Start();
+        StartDailyScheduling();
     }
 
     private void MainWindow_SourceInitialized(object? sender, EventArgs e)
@@ -188,6 +189,7 @@ public partial class MainWindow : Window
 
     private void Window_Closed(object? sender, EventArgs e)
     {
+        StopDailyScheduling();
         refreshTimer.Stop();
         providerSelectionTimer.Stop();
         resetCountdownTimer.Stop();
@@ -745,6 +747,7 @@ public partial class MainWindow : Window
         AutoStartBox.IsChecked = settings.AutoStart;
         ShowAntigravityBox.IsChecked = settings.ShowAntigravity;
         ShowCodexBox.IsChecked = settings.ShowCodex;
+        LoadDailySettings();
         WeeklyRingModeBox.SelectedIndex = settings.WeeklyRingGradientEnabled ? 1 : 0;
         WeeklyRingStartColorBox.Text = settings.WeeklyRingColor;
         WeeklyRingEndColorBox.Text = settings.WeeklyRingGradientColor;
@@ -799,8 +802,13 @@ public partial class MainWindow : Window
             return;
         }
 
+        if (!TryReadDailySettings(out var dailySettings)) return;
         var newSettings = SettingsStore.Normalize(settings with
         {
+            DailyConversationEnabled = dailySettings.DailyConversationEnabled,
+            DailyConversationTime = dailySettings.DailyConversationTime,
+            DailyConversationCodex = dailySettings.DailyConversationCodex,
+            DailyConversationAntigravity = dailySettings.DailyConversationAntigravity,
             WeeklyBudgetTokens = weeklyBudget,
             WeeklyBudgetConfigured = hasWeeklyBudget,
             RefreshSeconds = refreshSeconds,
@@ -822,6 +830,7 @@ public partial class MainWindow : Window
         Opacity = settings.Opacity;
         ConfigureRefreshTimer();
         SetAutoStart(settings.AutoStart);
+        UpdateDailyStatus();
         ApplyCombinedSnapshot();
         ShowDashboard();
         RefreshAsync(refreshOfficial: false);
@@ -947,6 +956,7 @@ public partial class MainWindow : Window
     private void ApplyLanguage()
     {
         var isEnglish = WidgetLanguage.IsEnglish(settings.Language);
+        ApplyDailyLanguage(isEnglish);
         Title = isEnglish ? "AI Usage Widget" : "AI 用量悬浮球";
 
         SettingsMenuItem.Header = isEnglish ? "Settings" : "设置";

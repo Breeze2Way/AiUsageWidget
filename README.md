@@ -27,6 +27,30 @@ AiUsageWidget 是一个轻量的 Windows 用量悬浮球，在同一处展示 An
 - An optional Codex weekly token budget can be configured for local usage estimates.
   可选设置 Codex 周 token 预算，用于本地用量估算。
 
+## Daily temporary chat / 每日临时会话
+
+In Settings, enable **Daily temporary chat**, set a local `HH:mm` time (default `05:30`), and independently select Codex and/or Antigravity. The feature is **off by default**; both apps are preselected. These choices are separate from the usage-display switches. **Test now** asks for confirmation and performs real requests using the current form without saving unrelated settings.
+
+在设置中启用“每日临时会话”，设置电脑本地时间 `HH:mm`（默认 `05:30`），分别勾选 Codex、Antigravity。功能**默认关闭**，两软件初始均勾选，与“显示来源”互相独立。“立即测试”会确认后真实执行，使用当前表单选择，不会保存其他尚未保存的设置。
+
+- Starts selected desktop apps if needed. Creates a new persistent background conversation in each app, sends `今日东京天气` once, then permanently deletes that exact conversation at least 60 seconds after send acknowledgement. There is no need to open the chat page. Normal model quota is consumed; deleting the chat does not refund usage.
+  到点自动启动未运行的软件，各自后台新建独立会话发送“今日东京天气”，发送确认后至少等待60秒，再永久删除精确对应的会话，无需切到会话页面。会消耗正常模型额度，删除不会退还额度。
+- Keep the widget running and the PC awake; apps must already be installed and signed in. This does not install Windows scheduled tasks, wake the PC, log in, or bypass permissions. A desktop app may come to the foreground when first launched. Local daylight/time-zone changes follow the PC clock. Missed minutes are not replayed, and each app is attempted at most once per local date, including failed attempts/restarts/time edits. A manual test does not consume the daily attempt.
+  须保持悬浮球运行、电脑唤醒，目标软件已安装并登录。不创建 Windows 计划任务、不唤醒电脑、不代登录或绕过权限。首次启动软件可能切换到前台。按电脑当前本地时区运行，错过不补发；每软件每天最多自动尝试一次，失败、重启、修改时间也不重复发送；手动测试不占当天定时次数。
+- Disabling stops new runs, **not pending cleanup**. Exiting cannot guarantee cleanup at the due time: the next widget launch recovers owned pending conversations without resending. Cleanup failure is retried at most three times per launch, 15 seconds apart; pending state remains for the next launch. Additional human messages, unknown identity, child-agent activity, or incomplete message history cause preservation, never guessed deletion. Check the per-app status in Settings.
+  关闭开关只停止新执行，**仍会清理此前创建的会话**。退出后无法保证准时删除，下次启动会恢复已记录的待清理会话，不重发。清理失败每次启动最多重试三次，间隔15秒，失败记录保留至下次启动。人工追加消息、身份不明、子代理活动或记录不完整时保留会话，不猜测删除；设置中可查看结果。
+- Uses Codex's configured default model with read-only/no-approval execution; Antigravity uses the default model returned by its own local service. It never changes provider model settings. Verified locally with Codex CLI `0.163.0-alpha.10.2` and Antigravity `2.27.0`; their local protocols may change in future versions. Model-response errors/quota failures can still occur after a message was accepted.
+  Codex 使用其配置的默认模型，任务设为只读、不自动批准交互；Antigravity 使用本地服务返回的默认模型，不修改软件模型设置。已在 Codex CLI `0.163.0-alpha.10.2` 和 Antigravity `2.27.0` 上验证，未来版本接口可能改变。消息已接受后仍可能出现模型报错或额度不足。
+- Durable ownership and daily attempts live in `%LOCALAPPDATA%\AiUsageWidget\conversation-runs.json`, separate from `settings.json`. Do not remove/edit that file while tasks are pending: clearing it loses deduplication and cleanup ownership. A corrupt/unwritable history stops all automatic actions; inspect/recover it and manually clean only the identified temporary chats before restarting. Credentials and message bodies are never written to this history.
+  每日去重和会话所有权独立保存在 `%LOCALAPPDATA%\AiUsageWidget\conversation-runs.json`。有待清理任务时不要删除或修改它，否则会丢失去重和清理依据。执行记录损坏或不可写时停止所有自动操作；请检查恢复记录、只手动处理已确认的临时会话，再重启。记录不包含凭据或消息全文。
+
+An explicit opt-in integration harness is available (not part of unit tests):
+独立的真实集成验证工具如下（不会随单元测试运行，会实际发送消息并删除新建测试会话）：
+
+```powershell
+dotnet run --project tests\AiUsageWidget.Smoke -- --live-create-send-delete <absolute-ownership-json-path>
+```
+
 ## Requirements / 运行要求
 
 - Windows 10/11 x64 and .NET 9 Desktop Runtime.
