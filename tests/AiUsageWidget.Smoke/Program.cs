@@ -53,6 +53,40 @@ if (args.Length == 2 && args[0] == "--render-settings")
 }
 
 // Explicit opt-in integration harness. Never run as part of dotnet test.
+if (args.Length == 2 && args[0] == "--live-schedule")
+{
+    using var scheduledCodex = new CodexConversationAdapter();
+    using var scheduledAntig = new AntigravityConversationAdapter();
+    var scheduledSettings = new AiUsageWidget.Models.WidgetSettings
+    {
+        DailyConversationEnabled = true,
+        DailyConversationTime = DateTime.Now.AddMinutes(1).ToString("HH:mm")
+    };
+    var scheduler = new DailyConversationScheduler(new ConversationRunStore(args[1]),
+        [scheduledCodex, scheduledAntig], TimeProvider.System, () => scheduledSettings);
+    using var timeout = new CancellationTokenSource(TimeSpan.FromMinutes(4));
+    Console.WriteLine($"SCHEDULED computer local time {scheduledSettings.DailyConversationTime}");
+    var previousStatus = "";
+    while (!timeout.IsCancellationRequested)
+    {
+        await scheduler.TickAsync(scheduledSettings, timeout.Token);
+        if (scheduler.FaultCode is not null) throw new InvalidOperationException(scheduler.FaultCode);
+        var status = string.Join("; ", scheduler.Runs.Select(r => $"{r.App}:{r.Stage}"));
+        if (status != previousStatus) { Console.WriteLine(status); previousStatus = status; }
+        if (scheduler.Runs.Count == 2 && scheduler.Runs.All(r => r.Stage == ConversationRunStage.CleanupPending))
+            scheduledSettings = scheduledSettings with { DailyConversationEnabled = false };
+        if (scheduler.Runs.Count == 2 && scheduler.Runs.All(r => r.Stage == ConversationRunStage.Completed))
+        {
+            await scheduler.TickAsync(scheduledSettings with { DailyConversationEnabled = true }, timeout.Token);
+            if (scheduler.Runs.Count != 2) throw new InvalidOperationException("Duplicate scheduled run.");
+            Console.WriteLine("PASS: both apps triggered by computer local time; disabling retained cleanup; no duplicate sends.");
+            return 0;
+        }
+        await Task.Delay(1000, timeout.Token);
+    }
+    throw new TimeoutException("Scheduled smoke did not complete; inspect owned history, never guess-delete.");
+}
+
 if (args.Length != 2 || args[0] != "--live-create-send-delete")
 {
     Console.Error.WriteLine("Requires --live-create-send-delete <ownership-json-path>; sends real requests and deletes only test-created IDs.");

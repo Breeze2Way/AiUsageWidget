@@ -33,6 +33,10 @@ In Settings, enable **Daily temporary chat**, set a local `HH:mm` time (default 
 
 在设置中启用“每日临时会话”，设置电脑本地时间 `HH:mm`（默认 `05:30`），分别勾选 Codex、Antigravity。功能**默认关闭**，两软件初始均勾选，与“显示来源”互相独立。“立即测试”会确认后真实执行，使用当前表单选择，不会保存其他尚未保存的设置。
 
+Time comes directly from the computer's local system clock/time zone (`TimeProvider.System`), not Tokyo time or an internet time service. “Tokyo” is only the weather-query location.
+
+时间直接使用电脑系统的本地时间和时区（`TimeProvider.System`），不是东京时间，也不联网校时；“东京”仅指天气查询地点。
+
 - Starts selected desktop apps if needed. Creates a new persistent background conversation in each app, sends `今日东京天气` once, then permanently deletes that exact conversation at least 60 seconds after send acknowledgement. There is no need to open the chat page. Normal model quota is consumed; deleting the chat does not refund usage.
   到点自动启动未运行的软件，各自后台新建独立会话发送“今日东京天气”，发送确认后至少等待60秒，再永久删除精确对应的会话，无需切到会话页面。会消耗正常模型额度，删除不会退还额度。
 - Keep the widget running and the PC awake; apps must already be installed and signed in. This does not install Windows scheduled tasks, wake the PC, log in, or bypass permissions. A desktop app may come to the foreground when first launched. Local daylight/time-zone changes follow the PC clock. Missed minutes are not replayed, and each app is attempted at most once per local date, including failed attempts/restarts/time edits. A manual test does not consume the daily attempt.
