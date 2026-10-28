@@ -31,13 +31,20 @@ if (args.Length == 2 && args[0] == "--render-settings")
                 // Render the real WPF content without showing a native window, starting
                 // its Loaded timers, saving settings, or creating any conversation.
                 var flags = System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance;
+                var settingsField = window.GetType().GetField("settings", flags)!;
+                var originalSettings = (AiUsageWidget.Models.WidgetSettings)settingsField.GetValue(window)!;
+                settingsField.SetValue(window, originalSettings with { Opacity = 0.55 });
+                window.Opacity = 0.55;
+                window.GetType().GetMethod("ShowSettings", flags)!.Invoke(window, null);
+                if (window.Opacity != 1.0) throw new InvalidOperationException("Settings window is not fully opaque.");
+                window.GetType().GetMethod("ShowDashboard", flags)!.Invoke(window, null);
+                if (Math.Abs(window.Opacity - 0.55) > 0.001) throw new InvalidOperationException("Dashboard opacity was not restored.");
+                settingsField.SetValue(window, originalSettings);
                 window.GetType().GetMethod("ShowSettings", flags)!.Invoke(window, null);
                 ((System.Windows.FrameworkElement)window.FindName("SettingsPanel")).Visibility = System.Windows.Visibility.Visible;
                 ((System.Windows.FrameworkElement)window.FindName("DashboardPanel")).Visibility = System.Windows.Visibility.Collapsed;
                 var content = (System.Windows.FrameworkElement)window.Content;
                 var scroll = (System.Windows.Controls.ScrollViewer)window.FindName("SettingsScroll");
-                var settingsField = window.GetType().GetField("settings", flags)!;
-                var originalSettings = (AiUsageWidget.Models.WidgetSettings)settingsField.GetValue(window)!;
                 foreach (var language in new[] { "zh-CN", "en-US" })
                 {
                     settingsField.SetValue(window, originalSettings with { Language = language });

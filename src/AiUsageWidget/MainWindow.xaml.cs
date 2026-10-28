@@ -718,6 +718,7 @@ public partial class MainWindow : Window
     private void ShowSettings()
     {
         RestoreWindow();
+        Opacity = 1.0;
         if (SettingsPanel.Visibility != Visibility.Visible)
         {
             dashboardPosition = new System.Windows.Point(Left, Top);
@@ -765,6 +766,7 @@ public partial class MainWindow : Window
         RestoreWindow();
         SettingsPanel.Visibility = Visibility.Collapsed;
         DashboardPanel.Visibility = Visibility.Visible;
+        Opacity = settings.Opacity;
         Width = BallWindowSize;
         Height = BallWindowSize;
         if (dashboardPosition is { } position)
@@ -824,7 +826,6 @@ public partial class MainWindow : Window
         settings = newSettings;
         ApplyWeeklyRingSettings();
         Topmost = settings.Topmost;
-        Opacity = settings.Opacity;
         ConfigureRefreshTimer();
         SetAutoStart(settings.AutoStart);
         UpdateDailyStatus();
@@ -977,7 +978,7 @@ public partial class MainWindow : Window
         ShowCodexBox.ToolTip = isEnglish
             ? "Show Codex usage while Codex or ChatGPT is running."
             : "Codex 或 ChatGPT 正在运行时显示 Codex 用量。";
-        OpacityLabel.Text = isEnglish ? "Window opacity" : "窗口不透明度";
+        OpacityLabel.Text = isEnglish ? "Ball opacity" : "悬浮球不透明度";
         RingStyleSectionText.Text = isEnglish ? "Ring style" : "外圈样式";
         RingModeLabel.Text = isEnglish ? "Color mode" : "颜色模式";
         SolidModeItem.Content = isEnglish ? "Solid" : "纯色";
