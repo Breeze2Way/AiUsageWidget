@@ -967,7 +967,7 @@ public partial class MainWindow : Window
             ? "Choose visible apps and adjust the widget"
             : "选择显示来源并调整悬浮球样式";
         DataRefreshSectionText.Text = isEnglish ? "Data and refresh" : "数据与刷新";
-        RefreshIntervalLabel.Text = isEnglish ? "Refresh (seconds)" : "刷新间隔（秒）";
+        RefreshIntervalLabel.Text = isEnglish ? "Refresh (sec)" : "刷新间隔（秒）";
         ProviderSelectionLabel.Text = isEnglish ? "Show usage for" : "显示来源";
         ShowAntigravityBox.Content = "Antigravity";
         ShowCodexBox.Content = "Codex";
@@ -985,6 +985,7 @@ public partial class MainWindow : Window
         StartColorLabel.Text = isEnglish ? "Start color" : "起始颜色";
         EndColorLabel.Text = isEnglish ? "End color" : "结束颜色";
         TrackColorLabel.Text = isEnglish ? "Track color" : "底色";
+        WindowSectionText.Text = isEnglish ? "Window and startup" : "窗口与启动";
         ColorHintText.Text = isEnglish
             ? "Use #RRGGBB or click a color swatch. Solid mode uses the start color."
             : "支持 #RRGGBB，也可以点击色块选择颜色；纯色模式只使用起始颜色。";

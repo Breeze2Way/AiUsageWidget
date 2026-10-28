@@ -110,7 +110,7 @@
                     CornerRadius="12">
                 <Grid>
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="54" />
+                        <RowDefinition Height="50" />
                         <RowDefinition Height="*" />
                         <RowDefinition Height="40" />
                     </Grid.RowDefinitions>
@@ -148,21 +148,24 @@
                             <RowDefinition Height="152" />
                             <RowDefinition Height="Auto" />
                         </Grid.RowDefinitions>
+                    <Border Grid.Row="1" Grid.RowSpan="2" Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="8" IsHitTestVisible="False" />
+                    <Border Grid.Row="4" Grid.RowSpan="3" Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="8" IsHitTestVisible="False" />
                     <TextBlock x:Name="DataRefreshSectionText"
                                Grid.Row="1"
+                               Margin="10,3,10,0"
                                Text="数据与刷新"
                                Foreground="#0E7490"
                                FontSize="13"
                                FontWeight="SemiBold"
                                VerticalAlignment="Center" />
-                    <Grid Grid.Row="2">
+                    <Grid Grid.Row="2" Margin="10,0,10,0">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="38" />
                             <RowDefinition Height="38" />
                             <RowDefinition Height="38" />
                         </Grid.RowDefinitions>
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="112" />
+                            <ColumnDefinition Width="100" />
                             <ColumnDefinition Width="*" />
                         </Grid.ColumnDefinitions>
                         <TextBlock x:Name="RefreshIntervalLabel"
@@ -180,12 +183,12 @@
                                    VerticalAlignment="Center" />
                         <StackPanel Grid.Row="1" Grid.Column="1"
                                     Orientation="Horizontal"
-                                    Margin="8,0,0,0"
+                                    Margin="0,0,0,0"
                                     VerticalAlignment="Center">
                             <CheckBox x:Name="ShowAntigravityBox"
                                       Content="Antigravity"
                                       Foreground="#334155"
-                                      Margin="0,0,8,0"
+                                      Margin="0,0,6,0"
                                       VerticalAlignment="Center" />
                             <CheckBox x:Name="ShowCodexBox"
                                       Content="Codex"
@@ -229,12 +232,13 @@
 
                     <TextBlock x:Name="RingStyleSectionText"
                                Grid.Row="4"
+                               Margin="10,3,10,0"
                                Text="外圈样式"
                                Foreground="#0E7490"
                                FontSize="13"
                                FontWeight="SemiBold"
                                VerticalAlignment="Center" />
-                    <Grid Grid.Row="5">
+                    <Grid Grid.Row="5" Margin="10,0,10,0">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="38" />
                             <RowDefinition Height="38" />
@@ -242,7 +246,7 @@
                             <RowDefinition Height="38" />
                         </Grid.RowDefinitions>
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="112" />
+                            <ColumnDefinition Width="100" />
                             <ColumnDefinition Width="*" />
                         </Grid.ColumnDefinitions>
                         <TextBlock x:Name="RingModeLabel"
@@ -339,28 +343,15 @@
                         </Grid>
                     </Grid>
 
-                    <Grid Grid.Row="6" Margin="0,6,0,0">
-                        <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+                    <Grid Grid.Row="6" Margin="10,6,10,2">
                         <TextBlock x:Name="ColorHintText"
                                    Text="支持 #RRGGBB，例如 #58B7E8；纯色模式只使用起始颜色。"
                                    Foreground="#64748B"
                                    FontSize="11" TextWrapping="Wrap"
                                    VerticalAlignment="Center" />
-                        <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0,10,0,0"
-                                    HorizontalAlignment="Left"
-                                    VerticalAlignment="Center">
-                            <CheckBox x:Name="TopmostBox"
-                                      Content="窗口置顶"
-                                      Foreground="#334155"
-                                      Margin="0,0,18,0"
-                                      VerticalAlignment="Center" />
-                            <CheckBox x:Name="AutoStartBox"
-                                      Content="开机启动"
-                                      Foreground="#334155"
-                                      VerticalAlignment="Center" />
-                        </StackPanel>
                     </Grid>
-                    <Border Grid.Column="2" Grid.Row="1" Grid.RowSpan="6" Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="8" Padding="14,12" VerticalAlignment="Top">
+                    <StackPanel Grid.Column="2" Grid.Row="1" Grid.RowSpan="6" VerticalAlignment="Top">
+                    <Border Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="8" Padding="14,12">
                         <StackPanel>
                             <TextBlock x:Name="DailySectionText" Text="每日临时会话" FontSize="13" FontWeight="SemiBold" Foreground="#0E7490" />
                             <CheckBox x:Name="DailyEnabledBox" Content="启用每日定时" Margin="0,12,0,10" Foreground="#334155" />
@@ -379,6 +370,16 @@
                             <Button x:Name="DailyTestButton" Content="立即测试" HorizontalAlignment="Left" Click="TestDailyConversation_Click" Style="{StaticResource SettingsButtonStyle}" />
                         </StackPanel>
                     </Border>
+                    <Border Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="8" Padding="14,8" Margin="0,8,0,0">
+                        <StackPanel>
+                            <TextBlock x:Name="WindowSectionText" Text="窗口与启动" FontSize="13" FontWeight="SemiBold" Foreground="#0E7490" />
+                            <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                                <CheckBox x:Name="TopmostBox" Content="窗口置顶" Foreground="#334155" Margin="0,0,18,0" VerticalAlignment="Center" />
+                                <CheckBox x:Name="AutoStartBox" Content="开机启动" Foreground="#334155" VerticalAlignment="Center" />
+                            </StackPanel>
+                        </StackPanel>
+                    </Border>
+                    </StackPanel>
                     </Grid>
                     </ScrollViewer>
                     <StackPanel Grid.Row="2"
