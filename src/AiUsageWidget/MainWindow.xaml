@@ -17,6 +17,7 @@
     <Window.Resources>
         <Style x:Key="SettingsTextBoxStyle" TargetType="TextBox">
             <Setter Property="MinHeight" Value="30" />
+            <Setter Property="Margin" Value="0,3" />
             <Setter Property="Padding" Value="8,4" />
             <Setter Property="BorderBrush" Value="#CBD5E1" />
             <Setter Property="BorderThickness" Value="1" />
@@ -25,6 +26,7 @@
         </Style>
         <Style x:Key="SettingsComboBoxStyle" TargetType="ComboBox">
             <Setter Property="MinHeight" Value="30" />
+            <Setter Property="Margin" Value="0,3" />
             <Setter Property="Padding" Value="6,2" />
             <Setter Property="BorderBrush" Value="#CBD5E1" />
             <Setter Property="BorderThickness" Value="1" />
@@ -108,7 +110,7 @@
                     CornerRadius="12">
                 <Grid>
                     <Grid.RowDefinitions>
-                        <RowDefinition Height="48" />
+                        <RowDefinition Height="54" />
                         <RowDefinition Height="*" />
                         <RowDefinition Height="40" />
                     </Grid.RowDefinitions>
@@ -134,60 +136,49 @@
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="20" />
+                            <ColumnDefinition Width="18" />
                             <ColumnDefinition Width="*" />
                         </Grid.ColumnDefinitions>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="0" />
-                            <RowDefinition Height="22" />
-                            <RowDefinition Height="130" />
-                            <RowDefinition Height="4" />
-                            <RowDefinition Height="22" />
-                            <RowDefinition Height="130" />
+                            <RowDefinition Height="24" />
+                            <RowDefinition Height="114" />
+                            <RowDefinition Height="8" />
+                            <RowDefinition Height="24" />
+                            <RowDefinition Height="152" />
                             <RowDefinition Height="Auto" />
                         </Grid.RowDefinitions>
                     <TextBlock x:Name="DataRefreshSectionText"
                                Grid.Row="1"
                                Text="数据与刷新"
                                Foreground="#0E7490"
-                               FontSize="12"
+                               FontSize="13"
                                FontWeight="SemiBold"
                                VerticalAlignment="Center" />
                     <Grid Grid.Row="2">
                         <Grid.RowDefinitions>
-                            <RowDefinition Height="32" />
-                            <RowDefinition Height="32" />
-                            <RowDefinition Height="32" />
-                            <RowDefinition Height="32" />
+                            <RowDefinition Height="38" />
+                            <RowDefinition Height="38" />
+                            <RowDefinition Height="38" />
                         </Grid.RowDefinitions>
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="132" />
+                            <ColumnDefinition Width="112" />
                             <ColumnDefinition Width="*" />
                         </Grid.ColumnDefinitions>
-                        <TextBlock x:Name="WeeklyBudgetLabel"
-                                   Text="Codex 周预算（token）"
-                                   Foreground="#334155"
-                                   VerticalAlignment="Center" />
-                        <TextBox x:Name="WeeklyBudgetBox"
-                                 Grid.Column="1"
-                                 Style="{StaticResource SettingsTextBoxStyle}"
-                                 ToolTip="留空则不启用本地周 token 预算" />
                         <TextBlock x:Name="RefreshIntervalLabel"
-                                   Grid.Row="1"
                                    Text="刷新间隔（秒）"
                                    Foreground="#334155"
                                    VerticalAlignment="Center" />
                         <TextBox x:Name="RefreshSecondsBox"
-                                 Grid.Row="1"
                                  Grid.Column="1"
                                  Style="{StaticResource SettingsTextBoxStyle}"
                                  ToolTip="官方用量查询间隔，范围 10–600 秒" />
                         <TextBlock x:Name="ProviderSelectionLabel"
-                                   Grid.Row="2"
+                                   Grid.Row="1"
                                    Text="显示来源"
                                    Foreground="#334155"
                                    VerticalAlignment="Center" />
-                        <StackPanel Grid.Row="2" Grid.Column="1"
+                        <StackPanel Grid.Row="1" Grid.Column="1"
                                     Orientation="Horizontal"
                                     Margin="8,0,0,0"
                                     VerticalAlignment="Center">
@@ -202,11 +193,11 @@
                                       VerticalAlignment="Center" />
                         </StackPanel>
                         <TextBlock x:Name="OpacityLabel"
-                                   Grid.Row="3"
+                                   Grid.Row="2"
                                    Text="窗口不透明度"
                                    Foreground="#334155"
                                    VerticalAlignment="Center" />
-                        <Grid Grid.Row="3" Grid.Column="1" Margin="8,0,0,0">
+                        <Grid Grid.Row="2" Grid.Column="1" Margin="8,0,0,0">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="54" />
@@ -240,18 +231,18 @@
                                Grid.Row="4"
                                Text="外圈样式"
                                Foreground="#0E7490"
-                               FontSize="12"
+                               FontSize="13"
                                FontWeight="SemiBold"
                                VerticalAlignment="Center" />
                     <Grid Grid.Row="5">
                         <Grid.RowDefinitions>
-                            <RowDefinition Height="32" />
-                            <RowDefinition Height="32" />
-                            <RowDefinition Height="32" />
-                            <RowDefinition Height="32" />
+                            <RowDefinition Height="38" />
+                            <RowDefinition Height="38" />
+                            <RowDefinition Height="38" />
+                            <RowDefinition Height="38" />
                         </Grid.RowDefinitions>
                         <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="132" />
+                            <ColumnDefinition Width="112" />
                             <ColumnDefinition Width="*" />
                         </Grid.ColumnDefinitions>
                         <TextBlock x:Name="RingModeLabel"
@@ -270,7 +261,7 @@
                                    Text="起始颜色"
                                    Foreground="#334155"
                                    VerticalAlignment="Center" />
-                        <Grid Grid.Row="1" Grid.Column="1" Margin="8,0,0,0">
+                        <Grid Grid.Row="1" Grid.Column="1">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="34" />
@@ -297,7 +288,7 @@
                                    Text="结束颜色"
                                    Foreground="#334155"
                                    VerticalAlignment="Center" />
-                        <Grid Grid.Row="2" Grid.Column="1" Margin="8,0,0,0">
+                        <Grid Grid.Row="2" Grid.Column="1">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="34" />
@@ -324,7 +315,7 @@
                                    Text="底色"
                                    Foreground="#334155"
                                    VerticalAlignment="Center" />
-                        <Grid Grid.Row="3" Grid.Column="1" Margin="8,0,0,0">
+                        <Grid Grid.Row="3" Grid.Column="1">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="34" />
@@ -348,7 +339,7 @@
                         </Grid>
                     </Grid>
 
-                    <Grid Grid.Row="6" Margin="0,4,0,0">
+                    <Grid Grid.Row="6" Margin="0,6,0,0">
                         <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
                         <TextBlock x:Name="ColorHintText"
                                    Text="支持 #RRGGBB，例如 #58B7E8；纯色模式只使用起始颜色。"
@@ -369,9 +360,9 @@
                                       VerticalAlignment="Center" />
                         </StackPanel>
                     </Grid>
-                    <Border Grid.Column="2" Grid.Row="1" Grid.RowSpan="6" BorderBrush="#E2E8F0" BorderThickness="1,0,0,0" Padding="12,0,0,0">
+                    <Border Grid.Column="2" Grid.Row="1" Grid.RowSpan="6" Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="8" Padding="14,12" VerticalAlignment="Top">
                         <StackPanel>
-                            <TextBlock x:Name="DailySectionText" Text="每日临时会话" FontWeight="SemiBold" Foreground="#0E7490" />
+                            <TextBlock x:Name="DailySectionText" Text="每日临时会话" FontSize="13" FontWeight="SemiBold" Foreground="#0E7490" />
                             <CheckBox x:Name="DailyEnabledBox" Content="启用每日定时" Margin="0,12,0,10" Foreground="#334155" />
                             <Grid Margin="0,0,0,10">
                                 <Grid.ColumnDefinitions><ColumnDefinition Width="132"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>

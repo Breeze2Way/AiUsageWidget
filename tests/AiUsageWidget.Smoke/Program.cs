@@ -31,7 +31,7 @@ if (args.Length == 2 && args[0] == "--render-settings")
                 // Render the real WPF content without showing a native window, starting
                 // its Loaded timers, saving settings, or creating any conversation.
                 var flags = System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance;
-                window.GetType().GetMethod("LoadDailySettings", flags)!.Invoke(window, null);
+                window.GetType().GetMethod("ShowSettings", flags)!.Invoke(window, null);
                 ((System.Windows.FrameworkElement)window.FindName("SettingsPanel")).Visibility = System.Windows.Visibility.Visible;
                 ((System.Windows.FrameworkElement)window.FindName("DashboardPanel")).Visibility = System.Windows.Visibility.Collapsed;
                 var content = (System.Windows.FrameworkElement)window.Content;

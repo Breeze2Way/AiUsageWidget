@@ -24,8 +24,8 @@ AiUsageWidget 是一个轻量的 Windows 用量悬浮球，在同一处展示 An
   中英文显示完全跟随小工具中的语言设置。
 - Tray controls, settings, startup behavior, multi-monitor placement, single-instance protection, and the current Antigravity icon are retained.
   保留托盘菜单、设置、开机启动、多显示器位置、单实例保护和当前 Antigravity 图标。
-- An optional Codex weekly token budget can be configured for local usage estimates.
-  可选设置 Codex 周 token 预算，用于本地用量估算。
+- The settings window groups display and ring controls alongside the daily-chat options. Existing legacy Codex token-budget values are retained when saving other settings.
+  设置窗口将显示、外圈和每日会话选项分区排列；保存其他设置时会保留已有的旧版 Codex token 预算值。
 
 ## Daily temporary chat / 每日临时会话
 

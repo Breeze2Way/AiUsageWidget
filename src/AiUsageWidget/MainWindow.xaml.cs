@@ -740,9 +740,6 @@ public partial class MainWindow : Window
         Height = settingsSize.Height;
         Left = settingsPosition.X;
         Top = settingsPosition.Y;
-        WeeklyBudgetBox.Text = settings.WeeklyBudgetConfigured
-            ? settings.WeeklyBudgetTokens.ToString(CultureInfo.InvariantCulture)
-            : string.Empty;
         RefreshSecondsBox.Text = settings.RefreshSeconds.ToString(CultureInfo.InvariantCulture);
         OpacitySlider.Value = settings.Opacity * 100;
         TopmostBox.IsChecked = settings.Topmost;
@@ -782,15 +779,11 @@ public partial class MainWindow : Window
 
     private void SettingsSave_Click(object sender, RoutedEventArgs e)
     {
-        var hasWeeklyBudget = !string.IsNullOrWhiteSpace(WeeklyBudgetBox.Text);
-        var weeklyBudget = 0L;
-        if ((hasWeeklyBudget &&
-                (!long.TryParse(WeeklyBudgetBox.Text, NumberStyles.Integer, CultureInfo.InvariantCulture, out weeklyBudget) || weeklyBudget <= 0)) ||
-            !int.TryParse(RefreshSecondsBox.Text, NumberStyles.Integer, CultureInfo.InvariantCulture, out var refreshSeconds))
+        if (!int.TryParse(RefreshSecondsBox.Text, NumberStyles.Integer, CultureInfo.InvariantCulture, out var refreshSeconds))
         {
             ShowLocalizedMessage(
-                "Codex 周预算和刷新间隔必须是有效数字。",
-                "Codex weekly budget and refresh interval must be valid numbers.",
+                "刷新间隔必须是有效数字。",
+                "Refresh interval must be a valid number.",
                 "设置无效",
                 "Invalid settings");
             return;
@@ -815,8 +808,6 @@ public partial class MainWindow : Window
             DailyConversationTime = dailySettings.DailyConversationTime,
             DailyConversationCodex = dailySettings.DailyConversationCodex,
             DailyConversationAntigravity = dailySettings.DailyConversationAntigravity,
-            WeeklyBudgetTokens = weeklyBudget,
-            WeeklyBudgetConfigured = hasWeeklyBudget,
             RefreshSeconds = refreshSeconds,
             Opacity = OpacitySlider.Value / 100,
             Topmost = TopmostBox.IsChecked == true,
@@ -976,7 +967,6 @@ public partial class MainWindow : Window
             ? "Choose visible apps and adjust the widget"
             : "选择显示来源并调整悬浮球样式";
         DataRefreshSectionText.Text = isEnglish ? "Data and refresh" : "数据与刷新";
-        WeeklyBudgetLabel.Text = isEnglish ? "Codex weekly budget" : "Codex 周预算（token）";
         RefreshIntervalLabel.Text = isEnglish ? "Refresh (seconds)" : "刷新间隔（秒）";
         ProviderSelectionLabel.Text = isEnglish ? "Show usage for" : "显示来源";
         ShowAntigravityBox.Content = "Antigravity";
@@ -1006,9 +996,6 @@ public partial class MainWindow : Window
         AutoStartBox.Content = isEnglish ? "Start with Windows" : "开机启动";
         CancelButton.Content = isEnglish ? "Cancel" : "取消";
         SaveButton.Content = isEnglish ? "Save settings" : "保存设置";
-        WeeklyBudgetBox.ToolTip = isEnglish
-            ? "Optional budget used for Codex local usage estimates; leave blank to disable."
-            : "用于 Codex 本地用量估算的可选周预算；留空可关闭。";
         RefreshSecondsBox.ToolTip = isEnglish
             ? "Official usage query interval, from 10 to 600 seconds."
             : "官方用量查询间隔，范围 10–600 秒";
