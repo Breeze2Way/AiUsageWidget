@@ -166,13 +166,16 @@ public sealed class DailyConversationScheduler
                 }
                 // Check again inside the adapter immediately before irreversible deletion.
                 await adapter.StopAndDeleteAsync(run.Conversation!, ct).ConfigureAwait(false);
-                Save(run with { Stage = ConversationRunStage.Completed, ResultCode = "deleted" });
+                Save(run with { Stage = ConversationRunStage.Completed, ResultCode = "deleted", CleanupErrorCode = null });
             }
-            catch (Exception)
+            catch (Exception ex)
             {
                 var attempts = run.CleanupAttempts + 1;
                 if (attempts >= 3) exhausted.TryAdd(run.RunId, 0);
-                Save(run with { CleanupAttempts = attempts, RetryAt = clock.GetUtcNow().AddSeconds(15), ResultCode = "cleanup_failed" });
+                var diagnostic = ex.GetType().Name + (ex is ConversationRpcException rpcError ? ":" + rpcError.Code : "") +
+                    (ex.InnerException is { } inner ? ":" + inner.GetType().Name : "") +
+                    (ex.Data["rpcMethod"] is string method ? ":" + method : "");
+                Save(run with { CleanupAttempts = attempts, RetryAt = clock.GetUtcNow().AddSeconds(15), ResultCode = "cleanup_failed", CleanupErrorCode = diagnostic });
             }
         }
     }

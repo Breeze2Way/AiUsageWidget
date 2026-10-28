@@ -2,6 +2,21 @@ using System.IO;
 using System.Text.Json;
 using AiUsageWidget.Scheduling;
 
+if (args.Length == 2 && args[0] == "--verify-codex-cleanup")
+{
+    // Match a Chinese Windows GUI process rather than the UTF-8 dotnet console.
+    System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
+    Console.OutputEncoding = System.Text.Encoding.GetEncoding(936);
+    var run = new ConversationRunStore().Load().Single(r => r.App == ConversationApp.Codex && r.Conversation?.ThreadId == args[1]);
+    using var adapter = new CodexConversationAdapter();
+    using var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(45));
+    await adapter.EnsureReadyAsync(timeout.Token);
+    if (!await adapter.CanSafelyDeleteAsync(run.Conversation!, timeout.Token)) throw new InvalidOperationException("Conversation must be preserved.");
+    await adapter.StopAndDeleteAsync(run.Conversation!, timeout.Token);
+    Console.WriteLine("Owned conversation cleanup confirmed; no prompt sent.");
+    return 0;
+}
+
 if (args.Length == 2 && args[0] == "--render-settings")
 {
     Exception? failure = null;

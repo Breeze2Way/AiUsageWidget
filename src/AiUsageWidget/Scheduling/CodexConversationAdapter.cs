@@ -36,7 +36,10 @@ public sealed class CodexConversationAdapter : IConversationAdapter, IDisposable
             throw new InvalidDataException("Missing turn acknowledgement.");
     }
 
-    public async Task<bool> CanSafelyDeleteAsync(CreatedConversation conversation, CancellationToken ct)
+    public async Task<bool> CanSafelyDeleteAsync(CreatedConversation conversation, CancellationToken ct) =>
+        await CheckDeletionSafetyAsync(conversation, ct).ConfigureAwait(false) != false;
+
+    private async Task<bool?> CheckDeletionSafetyAsync(CreatedConversation conversation, CancellationToken ct)
     {
         Validate(conversation);
         try
@@ -61,13 +64,39 @@ public sealed class CodexConversationAdapter : IConversationAdapter, IDisposable
             }
             return true;
         }
-        catch (ConversationRpcException ex) when (ex.IsNotFound) { return true; }
+        catch (ConversationRpcException ex) when (ex.IsNotFound) { return null; }
+        catch (ConversationRpcException ex) when (ex.IsThreadNotLoaded)
+        {
+            // Not loaded does not mean deleted. Check every active and archived page.
+            // History queries for missing threads can stall on the verified CLI version.
+            if (await IsAbsentFromListsAsync(conversation.ThreadId, ct).ConfigureAwait(false)) return null;
+            throw;
+        }
+    }
+
+    private async Task<bool> IsAbsentFromListsAsync(string threadId, CancellationToken ct)
+    {
+        foreach (var archived in new[] { false, true })
+        {
+            string? cursor = null;
+            var seen = new HashSet<string>();
+            do
+            {
+                var page = await rpc.CallAsync("thread/list", new { limit = 100, sourceKinds = Array.Empty<string>(), archived, cursor }, ct).ConfigureAwait(false);
+                if (page.GetProperty("data").EnumerateArray().Any(t => t.GetProperty("id").GetString() == threadId)) return false;
+                cursor = page.GetProperty("nextCursor").GetString();
+                if (cursor is not null && !seen.Add(cursor)) throw new InvalidDataException("Repeated thread-list cursor.");
+            } while (cursor is not null);
+        }
+        return true;
     }
 
     public async Task StopAndDeleteAsync(CreatedConversation conversation, CancellationToken ct)
     {
         Validate(conversation);
-        if (!await CanSafelyDeleteAsync(conversation, ct).ConfigureAwait(false)) throw new InvalidOperationException("Conversation taken over; preserved.");
+        var safety = await CheckDeletionSafetyAsync(conversation, ct).ConfigureAwait(false);
+        if (safety is null) return;
+        if (safety == false) throw new InvalidOperationException("Conversation taken over; preserved.");
         try
         {
             var turns = await rpc.CallAsync("thread/turns/list", new { threadId = conversation.ThreadId, limit = 1000 }, ct).ConfigureAwait(false);

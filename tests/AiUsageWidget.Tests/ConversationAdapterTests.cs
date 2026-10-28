@@ -129,6 +129,59 @@ public sealed class ConversationAdapterTests
     }
 
     [Fact]
+    public async Task CodexAlreadyDeletedUnloadedThreadCompletesCleanupWithoutAnotherDelete()
+    {
+        var rpc = new FakeRpc((method, args) =>
+        {
+            if (method == "thread/read")
+            {
+                Assert.Equal(ThreadId, args.GetProperty("threadId").GetString());
+                throw new ConversationRpcException("-32600", "thread not loaded: " + ThreadId);
+            }
+            Assert.Equal("thread/list", method);
+            Assert.Empty(args.GetProperty("sourceKinds").EnumerateArray());
+            return J("{\"data\":[],\"nextCursor\":null}");
+        });
+        var adapter = new CodexConversationAdapter(rpc, _ => Task.CompletedTask);
+        Assert.True(await adapter.CanSafelyDeleteAsync(Owned(ConversationApp.Codex), default));
+        await adapter.StopAndDeleteAsync(Owned(ConversationApp.Codex), default);
+        Assert.DoesNotContain(rpc.Calls, x => x.Method == "thread/delete");
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task CodexUnloadedThreadAloneNeverProvesItWasDeleted(bool missingMethod)
+    {
+        var rpc = new FakeRpc((method, _) => method switch
+        {
+            "thread/read" => throw new ConversationRpcException("-32600", "thread not loaded: " + ThreadId),
+            "thread/list" when missingMethod => throw new ConversationRpcException("-32601", "Method not found"),
+            _ => JsonSerializer.SerializeToElement(new { data = new[] { new { id = ThreadId } }, nextCursor = (string?)null })
+        });
+        await Assert.ThrowsAsync<ConversationRpcException>(() => new CodexConversationAdapter(rpc, _ => Task.CompletedTask).CanSafelyDeleteAsync(Owned(ConversationApp.Codex), default));
+        Assert.DoesNotContain(rpc.Calls, x => x.Method == "thread/delete");
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task CodexUnloadedConversationOnLaterActiveOrArchivedPageIsNotReportedDeleted(bool archivedTarget)
+    {
+        var rpc = new FakeRpc((method, args) =>
+        {
+            if (method == "thread/read") throw new ConversationRpcException("-32600", "thread not loaded: " + ThreadId);
+            Assert.Equal("thread/list", method);
+            if (args.GetProperty("archived").GetBoolean() != archivedTarget) return J("{\"data\":[],\"nextCursor\":null}");
+            return args.GetProperty("cursor").ValueKind == JsonValueKind.Null
+                ? J("{\"data\":[],\"nextCursor\":\"second-page\"}")
+                : JsonSerializer.SerializeToElement(new { data = new[] { new { id = ThreadId } }, nextCursor = (string?)null });
+        });
+        await Assert.ThrowsAsync<ConversationRpcException>(() => new CodexConversationAdapter(rpc, _ => Task.CompletedTask).StopAndDeleteAsync(Owned(ConversationApp.Codex), default));
+        Assert.DoesNotContain(rpc.Calls, x => x.Method == "thread/delete");
+    }
+
+    [Fact]
     public async Task UnknownInstalledVersionStopsBeforeStartingApps()
     {
         var starts = 0;

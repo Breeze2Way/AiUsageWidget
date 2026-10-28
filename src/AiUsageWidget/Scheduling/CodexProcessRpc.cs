@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.IO;
+using System.Text;
 using System.Text.Json;
 
 namespace AiUsageWidget.Scheduling;
@@ -27,7 +28,9 @@ public sealed class CodexProcessRpc : IConversationRpc
                 var info = new ProcessStartInfo(DesktopAppLauncher.FindCodexCli())
                 {
                     UseShellExecute = false, CreateNoWindow = true, WorkingDirectory = DesktopAppLauncher.WorkspacePath,
-                    RedirectStandardInput = true, RedirectStandardOutput = true, RedirectStandardError = true
+                    RedirectStandardInput = true, RedirectStandardOutput = true, RedirectStandardError = true,
+                    StandardInputEncoding = new UTF8Encoding(false),
+                    StandardOutputEncoding = Encoding.UTF8, StandardErrorEncoding = Encoding.UTF8
                 };
                 foreach (var arg in new[] { "--no-daemon", "app-server", "--listen", "stdio://" }) info.ArgumentList.Add(arg);
                 process = Process.Start(info) ?? throw new IOException("Cannot start Codex service.");
@@ -39,7 +42,8 @@ public sealed class CodexProcessRpc : IConversationRpc
             }
         }
         finally { initGate.Release(); }
-        return await CallCoreAsync(method, args, ct).ConfigureAwait(false);
+        try { return await CallCoreAsync(method, args, ct).ConfigureAwait(false); }
+        catch (Exception ex) { ex.Data["rpcMethod"] = method; throw; }
     }
 
     private async Task<JsonElement> CallCoreAsync(string method, object args, CancellationToken ct)
@@ -70,6 +74,7 @@ public sealed class CodexProcessRpc : IConversationRpc
     }
     private async Task DrainAsync(Process child)
     {
+        Exception? failure = null;
         try
         {
             while (await child.StandardOutput.ReadLineAsync().ConfigureAwait(false) is { } line)
@@ -90,13 +95,13 @@ public sealed class CodexProcessRpc : IConversationRpc
                 else completion.TrySetResult(message.GetProperty("result").Clone());
             }
         }
-        catch (Exception) { }
+        catch (Exception ex) { failure = ex; }
         finally
         {
             if (ReferenceEquals(child, process))
             {
                 initialized = false;
-                foreach (var value in pending.Values) value.TrySetException(new IOException("Codex service connection closed."));
+                foreach (var value in pending.Values) value.TrySetException(new IOException("Codex service connection closed.", failure));
             }
         }
     }

@@ -10,6 +10,7 @@ public interface IConversationRpc : IDisposable
 public sealed class ConversationRpcException(string code, string remoteMessage) : Exception("Conversation service rejected the request.")
 {
     public string Code { get; } = code;
+    public bool IsThreadNotLoaded => Code == "-32600" && remoteMessage.StartsWith("thread not loaded:", StringComparison.OrdinalIgnoreCase);
     // Remote bodies are intentionally excluded from Exception.Message / logs.
     public bool IsNotFound => Code is "unknown" or "not_found" or "-32600" or "-32000" &&
         (remoteMessage.StartsWith("thread not found", StringComparison.OrdinalIgnoreCase) ||

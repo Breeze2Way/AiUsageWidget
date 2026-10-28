@@ -13,4 +13,5 @@ public sealed record ConversationRun(Guid RunId, ConversationApp App, DateOnly? 
     public int CleanupAttempts { get; init; }
     public DateTimeOffset? RetryAt { get; init; }
     public string ResultCode { get; init; } = "reserved";
+    public string? CleanupErrorCode { get; init; }
 }

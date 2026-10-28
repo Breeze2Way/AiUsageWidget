@@ -50,6 +50,10 @@ Time comes directly from the computer's local system clock/time zone (`TimeProvi
 
 Only the verified versions above are enabled by the runtime compatibility guard; other versions stop before creation and leave pending cleanup for recovery/manual handling. History is rechecked immediately before deletion, but the external protocols provide no atomic conditional-delete transaction. Do not reuse these temporary chats for other work while cleanup is pending.
 
+Codex background transport explicitly uses UTF-8, including on Chinese Windows installations. If a thread is no longer loaded, cleanup checks all active and archived list pages before treating it as already deleted. Cleanup diagnostics store only error types, RPC codes and method names, never remote error bodies or conversation text.
+
+Codex 后台通信显式使用 UTF-8，避免中文 Windows 编码导致响应解析失败。对于未加载的会话，清理会核对完整的活动与归档列表，确认不存在后记为已删除。清理诊断只记录错误类型、接口错误码和方法名，不记录远端错误正文或会话内容。
+
 删除前会再次检查消息，但外部接口不支持“检查消息与删除”原子事务；清理期间请勿复用这些临时会话处理其他工作。
 
 An explicit opt-in integration harness is available (not part of unit tests):
