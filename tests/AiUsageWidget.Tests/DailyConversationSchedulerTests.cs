@@ -129,6 +129,59 @@ public sealed class DailyConversationSchedulerTests
     }
 
     [Fact]
+    public async Task DisableDuringReadinessPreventsNewCreation()
+    {
+        var f = new Fixture();
+        var current = Enabled with { DailyConversationAntigravity = false };
+        var ready = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        f.Codex.OnReadyAsync = () => ready.Task;
+        var scheduler = new DailyConversationScheduler(f.Store, f.Adapters, f.Clock, () => current);
+        var tick = scheduler.TickAsync(current, default);
+        current = current with { DailyConversationEnabled = false };
+        ready.SetResult(); await tick;
+        Assert.Equal(0, f.Codex.CreatedCalls);
+        Assert.Empty(f.Codex.Messages);
+    }
+
+    [Fact]
+    public async Task SlowCleanupRechecksTimeBeforeCreating()
+    {
+        var f = new Fixture(); f.Clock.Advance(-10);
+        await f.Scheduler.TestNowAsync(Enabled with { DailyConversationAntigravity = false }, default);
+        f.Clock.Advance(60);
+        f.Codex.OnReadyAsync = () => { f.Clock.Advance(20); return Task.CompletedTask; };
+        await f.Scheduler.TickAsync(Enabled with { DailyConversationAntigravity = false }, default);
+        Assert.Single(f.Codex.Messages);
+    }
+
+    [Fact]
+    public async Task SlowProviderRecoveryDoesNotBlockOtherProvidersDueMinute()
+    {
+        var f = new Fixture(); f.Clock.Advance(-120);
+        await f.Scheduler.TestNowAsync(Enabled with { DailyConversationAntigravity = false }, default);
+        f.Clock.Advance(60);
+        var ready = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        f.Codex.OnReadyAsync = () => ready.Task;
+        var recovering = f.Scheduler.TickAsync(Enabled, default);
+        f.Clock.Advance(60);
+        await f.Scheduler.TickAsync(Enabled, default);
+        Assert.Single(f.Antig.Messages);
+        ready.SetResult(); await recovering;
+    }
+
+    [Fact]
+    public async Task ConcurrentOwnershipFailuresRetainEveryKnownOrphan()
+    {
+        var f = new Fixture();
+        var create = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+        f.Codex.OnCreateAsync = f.Antig.OnCreateAsync = () => create.Task;
+        var tick = f.Scheduler.TickAsync(Enabled, default);
+        f.Store.FailSave = true; create.SetResult(); await tick;
+        Assert.Equal(2, f.Scheduler.UnpersistedConversations.Count);
+        Assert.Empty(f.Codex.Messages); Assert.Empty(f.Antig.Messages);
+    }
+
+    [Fact]
     public async Task ManualTestDoesNotConsumeDailyRunAndConcurrentTicksDoNotDuplicate()
     {
         var f = new Fixture();
@@ -163,6 +216,43 @@ public sealed class DailyConversationSchedulerTests
         Assert.Single(f.Codex.Deleted);
     }
 
+    [Fact]
+    public async Task ActualCancellationOfBlockedSendKeepsRecoverableOwnership()
+    {
+        var f = new Fixture(); using var cancellation = new CancellationTokenSource();
+        f.Codex.OnSendAsync = ct => Task.Delay(Timeout.Infinite, ct);
+        var tick = f.Scheduler.TickAsync(Enabled with { DailyConversationAntigravity = false }, cancellation.Token);
+        cancellation.Cancel(); await tick;
+        var run = Assert.Single(f.Store.Runs);
+        Assert.NotNull(run.Conversation); Assert.Equal(ConversationRunStage.CleanupPending, run.Stage);
+        f.Clock.Advance(60);
+        await new DailyConversationScheduler(f.Store, f.Adapters, f.Clock).TickAsync(new(), default);
+        Assert.Single(f.Codex.Deleted); Assert.Single(f.Codex.Messages);
+    }
+
+    [Fact]
+    public async Task CleanupExhaustionIsBoundedAndRestartAllowsRecovery()
+    {
+        var f = new Fixture(); await f.Scheduler.TickAsync(Enabled, default);
+        f.Codex.FailDelete = true; f.Clock.Advance(60);
+        for (var i = 0; i < 8; i++) { await f.Scheduler.TickAsync(new(), default); f.Clock.Advance(15); }
+        Assert.Equal(3, f.Codex.DeleteCalls);
+        f.Codex.FailDelete = false;
+        await new DailyConversationScheduler(f.Store, f.Adapters, f.Clock).TickAsync(new(), default);
+        Assert.Single(f.Codex.Deleted);
+    }
+
+    [Fact]
+    public async Task RepeatedDstHourDoesNotDuplicateLocalDate()
+    {
+        var f = new Fixture(); f.Clock.Zone = TimeZoneInfo.FindSystemTimeZoneById("Eastern Standard Time");
+        f.Clock.SetUtc(DateTimeOffset.Parse("2026-11-01T05:30:00Z"));
+        var settings = Enabled with { DailyConversationTime = "01:30" };
+        await f.Scheduler.TickAsync(settings, default);
+        f.Clock.Advance(3600); await f.Scheduler.TickAsync(settings, default);
+        Assert.Single(f.Codex.Messages);
+    }
+
     private sealed class Fixture
     {
         public readonly TestClock Clock = new();
@@ -180,9 +270,11 @@ public sealed class DailyConversationSchedulerTests
         public override DateTimeOffset GetUtcNow() => now.ToUniversalTime();
         public override long GetTimestamp() => timestamp;
         public override long TimestampFrequency => TimeSpan.TicksPerSecond;
-        public override TimeZoneInfo LocalTimeZone => TimeZoneInfo.FindSystemTimeZoneById("China Standard Time");
+        public TimeZoneInfo Zone = TimeZoneInfo.FindSystemTimeZoneById("China Standard Time");
+        public override TimeZoneInfo LocalTimeZone => Zone;
         public void Advance(int seconds) { now = now.AddSeconds(seconds); timestamp += Math.Max(0, seconds) * TimeSpan.TicksPerSecond; }
         public void ChangeWallClock(int seconds) => now = now.AddSeconds(seconds);
+        public void SetUtc(DateTimeOffset value) => now = value;
     }
     private sealed class MemoryStore : IConversationRunStore
     {
@@ -200,17 +292,21 @@ public sealed class DailyConversationSchedulerTests
         public ConversationApp App => app;
         public List<string> Messages = [], Deleted = [];
         public bool FailReady, FailSend, FailDelete, Safe = true;
-        public int ReadyCalls;
+        public int ReadyCalls, CreatedCalls, DeleteCalls;
         public Action? OnCreate;
-        public Task EnsureReadyAsync(CancellationToken ct) { ReadyCalls++; return FailReady ? Task.FromException(new IOException()) : Task.CompletedTask; }
-        public Task<CreatedConversation> CreateAndOpenAsync(Guid id, CancellationToken ct)
+        public Func<Task>? OnReadyAsync, OnCreateAsync;
+        public Func<CancellationToken, Task>? OnSendAsync;
+        public Task EnsureReadyAsync(CancellationToken ct) { ReadyCalls++; return FailReady ? Task.FromException(new IOException()) : OnReadyAsync?.Invoke() ?? Task.CompletedTask; }
+        public async Task<CreatedConversation> CreateAndOpenAsync(Guid id, CancellationToken ct)
         {
-            OnCreate?.Invoke(); return Task.FromResult(new CreatedConversation(app, Guid.NewGuid().ToString(), id, DateTimeOffset.UtcNow));
+            CreatedCalls++; OnCreate?.Invoke();
+            if (OnCreateAsync is not null) await OnCreateAsync();
+            return new CreatedConversation(app, Guid.NewGuid().ToString(), id, DateTimeOffset.UtcNow);
         }
         public Task SendAsync(CreatedConversation c, string text, CancellationToken ct)
-        { Messages.Add(text); return FailSend ? Task.FromException(new OperationCanceledException()) : Task.CompletedTask; }
+        { Messages.Add(text); return FailSend ? Task.FromException(new OperationCanceledException()) : OnSendAsync?.Invoke(ct) ?? Task.CompletedTask; }
         public Task<bool> CanSafelyDeleteAsync(CreatedConversation c, CancellationToken ct) => Task.FromResult(Safe);
         public Task StopAndDeleteAsync(CreatedConversation c, CancellationToken ct)
-        { if (FailDelete) throw new IOException(); Deleted.Add(c.ThreadId); return Task.CompletedTask; }
+        { DeleteCalls++; if (FailDelete) throw new IOException(); Deleted.Add(c.ThreadId); return Task.CompletedTask; }
     }
 }

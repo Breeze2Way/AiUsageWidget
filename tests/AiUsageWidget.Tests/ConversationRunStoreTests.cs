@@ -60,5 +60,18 @@ public sealed class ConversationRunStoreTests : IDisposable
             SentAt = time, CleanupDueAt = time.AddMinutes(1)
         };
     }
+    [Fact]
+    public void RealReplacementFailurePreservesPreviousFileAndRemovesTemp()
+    {
+        var store = new ConversationRunStore(directory);
+        var run = NewRun(); store.Save([run]);
+        using (var locked = File.Open(FilePath, FileMode.Open, FileAccess.Read, FileShare.Read))
+        {
+            var ex = Assert.ThrowsAny<Exception>(() => store.Save([run with { ResultCode = "waiting_cleanup" }]));
+            Assert.True(ex is IOException or UnauthorizedAccessException);
+        }
+        Assert.Equal(run, Assert.Single(store.Load()));
+        Assert.Empty(Directory.GetFiles(directory, "*.tmp"));
+    }
     public void Dispose() { if (Directory.Exists(directory)) Directory.Delete(directory, true); }
 }

@@ -18,7 +18,7 @@ public partial class MainWindow
     private void StartDailyScheduling()
     {
         dailyCodex = new(); dailyAntigravity = new();
-        dailyScheduler = new(new ConversationRunStore(), [dailyCodex, dailyAntigravity], TimeProvider.System);
+        dailyScheduler = new(new ConversationRunStore(), [dailyCodex, dailyAntigravity], TimeProvider.System, () => settings);
         dailyScheduler.StatusChanged += (_, _) => { if (!dailyClosed) Dispatcher.BeginInvoke(UpdateDailyStatus); };
         dailyTimer.Tick += async (_, _) => await TickDailyAsync();
         dailyTimer.Start();
@@ -26,13 +26,12 @@ public partial class MainWindow
     }
     private async Task TickDailyAsync()
     {
-        if (dailyTickRunning || dailyClosed || dailyScheduler is null) return;
-        dailyTickRunning = true;
+        if (dailyClosed || dailyScheduler is null) return;
         var snapshot = settings;
         try { await Task.Run(() => dailyScheduler.TickAsync(snapshot, dailyCancellation.Token)); }
         catch (OperationCanceledException) { }
         catch (Exception ex) { App.LogException("DailyConversation", new InvalidOperationException(ex.GetType().Name)); }
-        finally { dailyTickRunning = false; if (!dailyClosed) UpdateDailyStatus(); }
+        finally { if (!dailyClosed) UpdateDailyStatus(); }
     }
     private void StopDailyScheduling()
     {
@@ -102,7 +101,7 @@ public partial class MainWindow
         {
             DailyStatusText.Text = english ? "History unavailable/write failed: all automatic actions stopped. Pending chats may need manual cleanup."
                 : "执行记录读取/写入异常，已停止自动操作；待清理会话可能需手动处理。";
-            if (dailyScheduler.UnpersistedConversation is { } orphan)
+            foreach (var orphan in dailyScheduler.UnpersistedConversations)
                 DailyStatusText.Text += $"\n{orphan.App} ID: {orphan.ThreadId}";
             return;
         }

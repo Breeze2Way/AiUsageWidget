@@ -27,6 +27,7 @@ public static class DailyConversationStatusFormatter
         ("cleanup_failed", false) => "清理失败，待重试；重启后可恢复", ("cleanup_failed", true) => "Cleanup failed; pending retry/restart recovery",
         ("create_failed", false) => "启动/创建失败：请检查安装、登录及接口版本", ("create_failed", true) => "Startup/create failed: check installation, sign-in and version",
         ("interrupted", false) => "上次执行中断，未重发", ("interrupted", true) => "Interrupted; not resent",
+        ("schedule_changed", false) => "设置/执行时间已变化，未发送新消息", ("schedule_changed", true) => "Settings/time changed; new send cancelled",
         (_, false) => "尚未执行", _ => "Not run yet"
     };
 }

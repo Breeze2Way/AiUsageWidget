@@ -40,9 +40,13 @@ In Settings, enable **Daily temporary chat**, set a local `HH:mm` time (default 
 - Disabling stops new runs, **not pending cleanup**. Exiting cannot guarantee cleanup at the due time: the next widget launch recovers owned pending conversations without resending. Cleanup failure is retried at most three times per launch, 15 seconds apart; pending state remains for the next launch. Additional human messages, unknown identity, child-agent activity, or incomplete message history cause preservation, never guessed deletion. Check the per-app status in Settings.
   关闭开关只停止新执行，**仍会清理此前创建的会话**。退出后无法保证准时删除，下次启动会恢复已记录的待清理会话，不重发。清理失败每次启动最多重试三次，间隔15秒，失败记录保留至下次启动。人工追加消息、身份不明、子代理活动或记录不完整时保留会话，不猜测删除；设置中可查看结果。
 - Uses Codex's configured default model with read-only/no-approval execution; Antigravity uses the default model returned by its own local service. It never changes provider model settings. Verified locally with Codex CLI `0.163.0-alpha.10.2` and Antigravity `2.27.0`; their local protocols may change in future versions. Model-response errors/quota failures can still occur after a message was accepted.
-  Codex 使用其配置的默认模型，任务设为只读、不自动批准交互；Antigravity 使用本地服务返回的默认模型，不修改软件模型设置。已在 Codex CLI `0.163.0-alpha.10.2` 和 Antigravity `2.27.0` 上验证，未来版本接口可能改变。消息已接受后仍可能出现模型报错或额度不足。
+  Codex 使用其配置的默认模型，任务设为只读、不自动批准交互；Antigravity 使用本地服务返回的默认模型，不修改软件模型设置。已在 Codex CLI `0.163.0-alpha.10.2` 和 Antigravity `2.27.0` 上验证。**运行前检查版本，其他版本停止创建，需兼容性验证后更新小工具；待清理任务也会保留等待处理。**消息已接受后仍可能出现模型报错或额度不足。
 - Durable ownership and daily attempts live in `%LOCALAPPDATA%\AiUsageWidget\conversation-runs.json`, separate from `settings.json`. Do not remove/edit that file while tasks are pending: clearing it loses deduplication and cleanup ownership. A corrupt/unwritable history stops all automatic actions; inspect/recover it and manually clean only the identified temporary chats before restarting. Credentials and message bodies are never written to this history.
   每日去重和会话所有权独立保存在 `%LOCALAPPDATA%\AiUsageWidget\conversation-runs.json`。有待清理任务时不要删除或修改它，否则会丢失去重和清理依据。执行记录损坏或不可写时停止所有自动操作；请检查恢复记录、只手动处理已确认的临时会话，再重启。记录不包含凭据或消息全文。
+
+Only the verified versions above are enabled by the runtime compatibility guard; other versions stop before creation and leave pending cleanup for recovery/manual handling. History is rechecked immediately before deletion, but the external protocols provide no atomic conditional-delete transaction. Do not reuse these temporary chats for other work while cleanup is pending.
+
+删除前会再次检查消息，但外部接口不支持“检查消息与删除”原子事务；清理期间请勿复用这些临时会话处理其他工作。
 
 An explicit opt-in integration harness is available (not part of unit tests):
 独立的真实集成验证工具如下（不会随单元测试运行，会实际发送消息并删除新建测试会话）：

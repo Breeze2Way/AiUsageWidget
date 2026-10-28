@@ -18,6 +18,16 @@ public static class DesktopAppLauncher
         }
         throw new FileNotFoundException("Codex CLI is not installed.");
     }
+    public static string FindAntigravityExe()
+    {
+        foreach (var process in Process.GetProcessesByName("Antigravity"))
+            using (process)
+            {
+                try { if (process.MainModule?.FileName is { } file && File.Exists(file)) return file; }
+                catch (System.ComponentModel.Win32Exception) { }
+            }
+        return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Programs", "antigravity", "Antigravity.exe");
+    }
     public static async Task EnsureStartedAsync(ConversationApp app, CancellationToken ct)
     {
         static bool Running(ConversationApp value)
@@ -34,7 +44,7 @@ public static class DesktopAppLauncher
             Process.Start(new ProcessStartInfo("codex://") { UseShellExecute = true })?.Dispose();
         else
         {
-            var exe = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Programs", "antigravity", "Antigravity.exe");
+            var exe = FindAntigravityExe();
             if (!File.Exists(exe)) throw new FileNotFoundException("Antigravity is not installed.");
             Process.Start(new ProcessStartInfo(exe) { UseShellExecute = false, CreateNoWindow = true, WindowStyle = ProcessWindowStyle.Hidden })?.Dispose();
         }

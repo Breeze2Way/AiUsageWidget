@@ -11,7 +11,8 @@ public sealed class ConversationRpcException(string code, string remoteMessage) 
 {
     public string Code { get; } = code;
     // Remote bodies are intentionally excluded from Exception.Message / logs.
-    public bool IsNotFound => Code == "not_found" || Code == "404" ||
-        (remoteMessage.Contains("not found", StringComparison.OrdinalIgnoreCase) &&
-         (remoteMessage.Contains("thread", StringComparison.OrdinalIgnoreCase) || remoteMessage.Contains("trajectory", StringComparison.OrdinalIgnoreCase)));
+    public bool IsNotFound => Code is "unknown" or "not_found" or "-32600" or "-32000" &&
+        (remoteMessage.StartsWith("thread not found", StringComparison.OrdinalIgnoreCase) ||
+         remoteMessage.StartsWith("trajectory not found", StringComparison.OrdinalIgnoreCase) ||
+         remoteMessage.StartsWith("no rollout found for thread id", StringComparison.OrdinalIgnoreCase));
 }

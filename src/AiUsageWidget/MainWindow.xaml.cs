@@ -49,7 +49,7 @@ public partial class MainWindow : Window
     private Forms.ToolStripMenuItem trayLanguageMenuItem = null!;
     private Forms.ToolStripMenuItem trayExitMenuItem = null!;
     private System.Drawing.Icon? applicationIcon;
-    private WidgetSettings settings;
+    private volatile WidgetSettings settings;
     private UsageProvider activeProvider = UsageProvider.Antigravity;
     private HashSet<UsageProvider> visibleProviders = [];
     private bool isRefreshing;
@@ -728,14 +728,16 @@ public partial class MainWindow : Window
             dashboardPosition?.Y ?? Top,
             BallWindowSize,
             BallWindowSize);
+        var workArea = GetCurrentWorkArea();
+        var settingsSize = CalculateSettingsSize(workArea);
         var settingsPosition = WindowPlacementCalculator.CalculateSettingsPosition(
             anchorBounds,
-            new System.Windows.Size(SettingsWindowWidth, SettingsWindowHeight),
-            GetCurrentWorkArea(),
+            settingsSize,
+            workArea,
             SettingsWindowGap);
 
-        Width = SettingsWindowWidth;
-        Height = SettingsWindowHeight;
+        Width = settingsSize.Width;
+        Height = settingsSize.Height;
         Left = settingsPosition.X;
         Top = settingsPosition.Y;
         WeeklyBudgetBox.Text = settings.WeeklyBudgetConfigured
@@ -756,6 +758,10 @@ public partial class MainWindow : Window
         DashboardPanel.Visibility = Visibility.Collapsed;
         SettingsPanel.Visibility = Visibility.Visible;
     }
+
+    internal static System.Windows.Size CalculateSettingsSize(System.Windows.Rect workArea) => new(
+        Math.Max(BallWindowSize, Math.Min(SettingsWindowWidth, workArea.Width - 20)),
+        Math.Max(BallWindowSize, Math.Min(SettingsWindowHeight, workArea.Height - 20)));
 
     private void ShowDashboard()
     {

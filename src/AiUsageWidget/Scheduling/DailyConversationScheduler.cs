@@ -8,6 +8,9 @@ public sealed class DailyConversationScheduler
     private readonly IConversationRunStore store;
     private readonly Dictionary<ConversationApp, IConversationAdapter> adapters;
     private readonly TimeProvider clock;
+    private readonly Func<WidgetSettings>? currentSettings;
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<ConversationApp, byte> activeApps = new();
+    private readonly System.Collections.Concurrent.ConcurrentDictionary<string, CreatedConversation> unpersisted = new();
     private readonly SemaphoreSlim tickGate = new(1, 1);
     private readonly object stateLock = new();
     private readonly System.Collections.Concurrent.ConcurrentDictionary<Guid, byte> exhausted = new();
@@ -16,13 +19,14 @@ public sealed class DailyConversationScheduler
     private string? previousTime;
     private DateTime? suppressedMinute;
     public string? FaultCode { get; private set; }
-    public CreatedConversation? UnpersistedConversation { get; private set; }
+    public CreatedConversation? UnpersistedConversation => UnpersistedConversations.FirstOrDefault();
+    public IReadOnlyList<CreatedConversation> UnpersistedConversations => unpersisted.Values.ToArray();
     public event EventHandler? StatusChanged;
     public IReadOnlyList<ConversationRun> Runs { get { lock (stateLock) return runs.ToArray(); } }
 
-    public DailyConversationScheduler(IConversationRunStore store, IEnumerable<IConversationAdapter> adapters, TimeProvider clock)
+    public DailyConversationScheduler(IConversationRunStore store, IEnumerable<IConversationAdapter> adapters, TimeProvider clock, Func<WidgetSettings>? currentSettings = null)
     {
-        this.store = store; this.adapters = adapters.ToDictionary(a => a.App); this.clock = clock;
+        this.store = store; this.adapters = adapters.ToDictionary(a => a.App); this.clock = clock; this.currentSettings = currentSettings;
         try
         {
             runs = store.Load().ToList();
@@ -49,29 +53,58 @@ public sealed class DailyConversationScheduler
     private async Task ExecuteAsync(WidgetSettings settings, bool manual, CancellationToken ct)
     {
         if (!await tickGate.WaitAsync(0, ct).ConfigureAwait(false)) return;
+        Task[] work = [];
         try
         {
             if (FaultCode is not null) return;
+            var policy = manual ? settings : currentSettings?.Invoke() ?? settings;
             var local = clock.GetLocalNow();
             var minute = new DateTime(local.Year, local.Month, local.Day, local.Hour, local.Minute, 0);
             if (!manual)
             {
-                if (previousTime is not null && previousTime != settings.DailyConversationTime) suppressedMinute = minute;
-                previousTime = settings.DailyConversationTime;
+                if (previousTime is not null && previousTime != policy.DailyConversationTime) suppressedMinute = minute;
+                previousTime = policy.DailyConversationTime;
             }
-            await Task.WhenAll(adapters.Values.Select(a => CleanupAsync(a, ct))).ConfigureAwait(false);
-            if (FaultCode is not null || ct.IsCancellationRequested) return;
-            if (!DailyConversationOptions.TryParseTime(settings.DailyConversationTime, out var time)) return;
-            if (!manual && (!settings.DailyConversationEnabled || local.Hour != time.Hour || local.Minute != time.Minute || suppressedMinute == minute)) return;
-            var date = DateOnly.FromDateTime(local.Date);
-            await Task.WhenAll(adapters.Values.Where(a => a.App == ConversationApp.Codex
-                    ? settings.DailyConversationCodex : settings.DailyConversationAntigravity)
-                .Select(a => StartAsync(a, manual ? null : date, ct))).ConfigureAwait(false);
+            work = adapters.Values.Where(a => activeApps.TryAdd(a.App, 0)).Select(ProcessAppAsync).ToArray();
+
+            async Task ProcessAppAsync(IConversationAdapter adapter)
+            {
+                try
+                {
+                    await CleanupAsync(adapter, ct).ConfigureAwait(false);
+                    if (FaultCode is not null || ct.IsCancellationRequested) return;
+                    var fresh = manual ? policy : currentSettings?.Invoke() ?? settings;
+                    var now = clock.GetLocalNow();
+                    var date = DateOnly.FromDateTime(now.Date);
+                    if (!Selected(fresh, adapter.App) || !DailyConversationOptions.IsValid(fresh)) return;
+                    if (!manual && !Eligible(fresh, date, policy.DailyConversationTime)) return;
+                    await StartAsync(adapter, manual ? null : date, manual ? null : () =>
+                    {
+                        var latest = currentSettings?.Invoke() ?? settings;
+                        return Selected(latest, adapter.App) && Eligible(latest, date, policy.DailyConversationTime);
+                    }, ct).ConfigureAwait(false);
+                }
+                finally { activeApps.TryRemove(adapter.App, out _); }
+            }
         }
-        finally { tickGate.Release(); StatusChanged?.Invoke(this, EventArgs.Empty); }
+        finally { tickGate.Release(); }
+        try { await Task.WhenAll(work).ConfigureAwait(false); }
+        finally { StatusChanged?.Invoke(this, EventArgs.Empty); }
     }
 
-    private async Task StartAsync(IConversationAdapter adapter, DateOnly? date, CancellationToken ct)
+    private static bool Selected(WidgetSettings settings, ConversationApp app) =>
+        app == ConversationApp.Codex ? settings.DailyConversationCodex : settings.DailyConversationAntigravity;
+
+    private bool Eligible(WidgetSettings settings, DateOnly date, string expectedTime)
+    {
+        var now = clock.GetLocalNow();
+        var minute = new DateTime(now.Year, now.Month, now.Day, now.Hour, now.Minute, 0);
+        return settings.DailyConversationEnabled && settings.DailyConversationTime == expectedTime &&
+            DailyConversationOptions.TryParseTime(settings.DailyConversationTime, out var time) &&
+            DateOnly.FromDateTime(now.Date) == date && now.Hour == time.Hour && now.Minute == time.Minute && suppressedMinute != minute;
+    }
+
+    private async Task StartAsync(IConversationAdapter adapter, DateOnly? date, Func<bool>? canCreate, CancellationToken ct)
     {
         ConversationRun run;
         lock (stateLock)
@@ -85,9 +118,14 @@ public sealed class DailyConversationScheduler
         {
             await adapter.EnsureReadyAsync(ct).ConfigureAwait(false);
             ct.ThrowIfCancellationRequested();
+            if (FaultCode is not null) return;
+            if (canCreate is not null && !canCreate())
+            { Save(run with { Stage = ConversationRunStage.Failed, ResultCode = "schedule_changed" }); return; }
             var conversation = await adapter.CreateAndOpenAsync(run.RunId, ct).ConfigureAwait(false);
             run = run with { Conversation = conversation, Stage = ConversationRunStage.Created, ResultCode = "created", CleanupDueAt = clock.GetUtcNow().AddSeconds(60) };
-            if (!Save(run)) { UnpersistedConversation = conversation; return; } // Never send without durable ownership.
+            if (!Save(run)) { unpersisted[conversation.ThreadId] = conversation; return; } // Keep EVERY returned orphan ID.
+            if (canCreate is not null && !canCreate())
+            { Save(run with { Stage = ConversationRunStage.CleanupPending, ResultCode = "schedule_changed" }); return; }
             run = run with { Stage = ConversationRunStage.Sending, SendStartedAt = clock.GetUtcNow(), ResultCode = "sending" };
             if (!Save(run)) return;
             await adapter.SendAsync(conversation, Prompt, ct).ConfigureAwait(false);

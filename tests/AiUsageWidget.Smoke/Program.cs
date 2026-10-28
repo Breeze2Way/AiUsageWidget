@@ -2,6 +2,56 @@ using System.IO;
 using System.Text.Json;
 using AiUsageWidget.Scheduling;
 
+if (args.Length == 2 && args[0] == "--render-settings")
+{
+    Exception? failure = null;
+    var thread = new Thread(() =>
+    {
+        try
+        {
+            Directory.CreateDirectory(args[1]);
+            var window = new AiUsageWidget.MainWindow();
+            try
+            {
+                // Render the real WPF content without showing a native window, starting
+                // its Loaded timers, saving settings, or creating any conversation.
+                var flags = System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance;
+                window.GetType().GetMethod("LoadDailySettings", flags)!.Invoke(window, null);
+                ((System.Windows.FrameworkElement)window.FindName("SettingsPanel")).Visibility = System.Windows.Visibility.Visible;
+                ((System.Windows.FrameworkElement)window.FindName("DashboardPanel")).Visibility = System.Windows.Visibility.Collapsed;
+                var content = (System.Windows.FrameworkElement)window.Content;
+                content.Measure(new System.Windows.Size(500, 590));
+                content.Arrange(new System.Windows.Rect(0, 0, 500, 590)); content.UpdateLayout();
+                var scroll = (System.Windows.Controls.ScrollViewer)window.FindName("SettingsScroll");
+                foreach (var (section, offset) in new[] { ("top", 0.0), ("daily", scroll.ScrollableHeight) })
+                {
+                    scroll.ScrollToVerticalOffset(offset); content.UpdateLayout();
+                    foreach (var scale in new[] { 1.0, 1.5 })
+                    {
+                        var bitmap = new System.Windows.Media.Imaging.RenderTargetBitmap((int)(500 * scale), (int)(590 * scale), 96 * scale, 96 * scale, System.Windows.Media.PixelFormats.Pbgra32);
+                        bitmap.Render(content);
+                        var encoder = new System.Windows.Media.Imaging.PngBitmapEncoder();
+                        encoder.Frames.Add(System.Windows.Media.Imaging.BitmapFrame.Create(bitmap));
+                        using var file = File.Create(Path.Combine(args[1], $"settings-{section}-{scale:0.0}.png"));
+                        encoder.Save(file);
+                    }
+                }
+            }
+            finally
+            {
+                var flags = System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance;
+                (window.GetType().GetField("trayIcon", flags)?.GetValue(window) as IDisposable)?.Dispose();
+                (window.GetType().GetField("applicationIcon", flags)?.GetValue(window) as IDisposable)?.Dispose();
+            }
+        }
+        catch (Exception ex) { failure = ex; }
+    });
+    thread.SetApartmentState(ApartmentState.STA); thread.Start(); thread.Join();
+    if (failure is not null) throw failure;
+    Console.WriteLine("Rendered real settings at100%/150%; no timers or model requests started.");
+    return 0;
+}
+
 // Explicit opt-in integration harness. Never run as part of dotnet test.
 if (args.Length != 2 || args[0] != "--live-create-send-delete")
 {

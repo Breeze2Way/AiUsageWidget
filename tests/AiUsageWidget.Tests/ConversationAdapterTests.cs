@@ -108,6 +108,36 @@ public sealed class ConversationAdapterTests
         await Assert.ThrowsAsync<ConversationRpcException>(() => new CodexConversationAdapter(rpc, _ => Task.CompletedTask).SendAsync(Owned(ConversationApp.Codex), "今日东京天气", default));
     }
 
+    [Theory]
+    [InlineData("-32601", "Method not found: thread/items/list")]
+    [InlineData("not_found", "Procedure thread/turns/list not found")]
+    [InlineData("404", "route not found")]
+    [InlineData("unauthenticated", "thread not found")]
+    public void MissingMethodOrAuthIsNotAnAbsentConversation(string code, string message) =>
+        Assert.False(new ConversationRpcException(code, message).IsNotFound);
+
+    [Theory]
+    [InlineData("thread/items/list")]
+    [InlineData("thread/turns/list")]
+    [InlineData("thread/delete")]
+    public async Task MissingCleanupMethodIsNeverReportedAsSuccess(string missingMethod)
+    {
+        var rpc = new FakeRpc((method, _) => method == missingMethod
+            ? throw new ConversationRpcException("-32601", "Method not found: " + method)
+            : method == "thread/read" ? JsonSerializer.SerializeToElement(new { thread = new { id = ThreadId } }) : J("{\"data\":[],\"nextCursor\":null}"));
+        await Assert.ThrowsAsync<ConversationRpcException>(() => new CodexConversationAdapter(rpc, _ => Task.CompletedTask).StopAndDeleteAsync(Owned(ConversationApp.Codex), default));
+    }
+
+    [Fact]
+    public async Task UnknownInstalledVersionStopsBeforeStartingApps()
+    {
+        var starts = 0;
+        var guard = new ConversationCompatibilityGuard((_, _) => Task.FromResult("99.0.0"), (_, _) => { starts++; return Task.CompletedTask; });
+        await Assert.ThrowsAsync<NotSupportedException>(() => guard.EnsureReadyAsync(ConversationApp.Codex, default));
+        await Assert.ThrowsAsync<NotSupportedException>(() => guard.EnsureReadyAsync(ConversationApp.Antigravity, default));
+        Assert.Equal(0, starts);
+    }
+
     private static JsonElement J(string text) => JsonDocument.Parse(text).RootElement.Clone();
     private sealed class FakeRpc(Func<string, JsonElement, JsonElement> handler) : IConversationRpc
     {

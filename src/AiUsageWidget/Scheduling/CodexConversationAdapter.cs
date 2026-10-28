@@ -8,7 +8,7 @@ public sealed class CodexConversationAdapter : IConversationAdapter, IDisposable
     private readonly IConversationRpc rpc;
     private readonly Func<CancellationToken, Task> ready;
     public ConversationApp App => ConversationApp.Codex;
-    public CodexConversationAdapter() : this(new CodexProcessRpc(), ct => DesktopAppLauncher.EnsureStartedAsync(ConversationApp.Codex, ct)) { }
+    public CodexConversationAdapter() : this(new CodexProcessRpc(), ct => ConversationCompatibilityGuard.EnsureInstalledReadyAsync(ConversationApp.Codex, ct)) { }
     public CodexConversationAdapter(IConversationRpc rpc, Func<CancellationToken, Task> ready) { this.rpc = rpc; this.ready = ready; }
     public Task EnsureReadyAsync(CancellationToken ct) => ready(ct);
 
