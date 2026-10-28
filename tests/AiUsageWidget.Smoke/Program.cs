@@ -20,19 +20,24 @@ if (args.Length == 2 && args[0] == "--render-settings")
                 ((System.Windows.FrameworkElement)window.FindName("SettingsPanel")).Visibility = System.Windows.Visibility.Visible;
                 ((System.Windows.FrameworkElement)window.FindName("DashboardPanel")).Visibility = System.Windows.Visibility.Collapsed;
                 var content = (System.Windows.FrameworkElement)window.Content;
-                content.Measure(new System.Windows.Size(500, 590));
-                content.Arrange(new System.Windows.Rect(0, 0, 500, 590)); content.UpdateLayout();
                 var scroll = (System.Windows.Controls.ScrollViewer)window.FindName("SettingsScroll");
-                foreach (var (section, offset) in new[] { ("top", 0.0), ("daily", scroll.ScrollableHeight) })
+                var settingsField = window.GetType().GetField("settings", flags)!;
+                var originalSettings = (AiUsageWidget.Models.WidgetSettings)settingsField.GetValue(window)!;
+                foreach (var language in new[] { "zh-CN", "en-US" })
                 {
-                    scroll.ScrollToVerticalOffset(offset); content.UpdateLayout();
+                    settingsField.SetValue(window, originalSettings with { Language = language });
+                    window.GetType().GetMethod("ApplyLanguage", flags)!.Invoke(window, null);
+                    content.Measure(new System.Windows.Size(680, 540));
+                    content.Arrange(new System.Windows.Rect(0, 0, 680, 540)); content.UpdateLayout();
+                    if (scroll.ScrollableHeight > 0.5)
+                        throw new InvalidOperationException($"{language} settings require vertical scrolling: {scroll.ScrollableHeight:0.0} DIPs");
                     foreach (var scale in new[] { 1.0, 1.5 })
                     {
-                        var bitmap = new System.Windows.Media.Imaging.RenderTargetBitmap((int)(500 * scale), (int)(590 * scale), 96 * scale, 96 * scale, System.Windows.Media.PixelFormats.Pbgra32);
+                        var bitmap = new System.Windows.Media.Imaging.RenderTargetBitmap((int)(680 * scale), (int)(540 * scale), 96 * scale, 96 * scale, System.Windows.Media.PixelFormats.Pbgra32);
                         bitmap.Render(content);
                         var encoder = new System.Windows.Media.Imaging.PngBitmapEncoder();
                         encoder.Frames.Add(System.Windows.Media.Imaging.BitmapFrame.Create(bitmap));
-                        using var file = File.Create(Path.Combine(args[1], $"settings-{section}-{scale:0.0}.png"));
+                        using var file = File.Create(Path.Combine(args[1], $"settings-{language}-{scale:0.0}.png"));
                         encoder.Save(file);
                     }
                 }

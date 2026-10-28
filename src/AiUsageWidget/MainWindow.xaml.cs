@@ -24,8 +24,8 @@ public partial class MainWindow : Window
 {
     private const double BallWindowSize = 68;
     private const double WaterBallSize = 62;
-    internal const double SettingsWindowWidth = 500;
-    internal const double SettingsWindowHeight = 590;
+    internal const double SettingsWindowWidth = 680;
+    internal const double SettingsWindowHeight = 540;
     private const double SettingsWindowGap = 12;
     private const string CodexUsageUrl = "https://chatgpt.com";
     private const string StartupValueName = "AiUsageWidget";
@@ -976,8 +976,8 @@ public partial class MainWindow : Window
             ? "Choose visible apps and adjust the widget"
             : "选择显示来源并调整悬浮球样式";
         DataRefreshSectionText.Text = isEnglish ? "Data and refresh" : "数据与刷新";
-        WeeklyBudgetLabel.Text = isEnglish ? "Codex weekly budget (tokens)" : "Codex 周预算（token）";
-        RefreshIntervalLabel.Text = isEnglish ? "Refresh interval (seconds)" : "刷新间隔（秒）";
+        WeeklyBudgetLabel.Text = isEnglish ? "Codex weekly budget" : "Codex 周预算（token）";
+        RefreshIntervalLabel.Text = isEnglish ? "Refresh (seconds)" : "刷新间隔（秒）";
         ProviderSelectionLabel.Text = isEnglish ? "Show usage for" : "显示来源";
         ShowAntigravityBox.Content = "Antigravity";
         ShowCodexBox.Content = "Codex";

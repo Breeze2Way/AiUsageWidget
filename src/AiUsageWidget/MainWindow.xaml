@@ -130,16 +130,20 @@
                         </StackPanel>
                     </Grid>
 
-                    <ScrollViewer x:Name="SettingsScroll" Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="0,0,12,8">
+                    <ScrollViewer x:Name="SettingsScroll" Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="0,0,0,4">
                     <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="20" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="0" />
-                            <RowDefinition Height="26" />
-                            <RowDefinition Height="154" />
-                            <RowDefinition Height="18" />
-                            <RowDefinition Height="26" />
-                            <RowDefinition Height="168" />
-                            <RowDefinition Height="70" />
+                            <RowDefinition Height="22" />
+                            <RowDefinition Height="130" />
+                            <RowDefinition Height="4" />
+                            <RowDefinition Height="22" />
+                            <RowDefinition Height="130" />
                             <RowDefinition Height="Auto" />
                         </Grid.RowDefinitions>
                     <TextBlock x:Name="DataRefreshSectionText"
@@ -149,12 +153,12 @@
                                FontSize="12"
                                FontWeight="SemiBold"
                                VerticalAlignment="Center" />
-                    <Grid Grid.Row="2" Margin="0,6,0,0">
+                    <Grid Grid.Row="2">
                         <Grid.RowDefinitions>
-                            <RowDefinition Height="34" />
-                            <RowDefinition Height="34" />
-                            <RowDefinition Height="34" />
-                            <RowDefinition Height="42" />
+                            <RowDefinition Height="32" />
+                            <RowDefinition Height="32" />
+                            <RowDefinition Height="32" />
+                            <RowDefinition Height="32" />
                         </Grid.RowDefinitions>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="132" />
@@ -190,7 +194,7 @@
                             <CheckBox x:Name="ShowAntigravityBox"
                                       Content="Antigravity"
                                       Foreground="#334155"
-                                      Margin="0,0,22,0"
+                                      Margin="0,0,8,0"
                                       VerticalAlignment="Center" />
                             <CheckBox x:Name="ShowCodexBox"
                                       Content="Codex"
@@ -239,12 +243,12 @@
                                FontSize="12"
                                FontWeight="SemiBold"
                                VerticalAlignment="Center" />
-                    <Grid Grid.Row="5" Margin="0,6,0,0">
+                    <Grid Grid.Row="5">
                         <Grid.RowDefinitions>
-                            <RowDefinition Height="34" />
-                            <RowDefinition Height="42" />
-                            <RowDefinition Height="42" />
-                            <RowDefinition Height="42" />
+                            <RowDefinition Height="32" />
+                            <RowDefinition Height="32" />
+                            <RowDefinition Height="32" />
+                            <RowDefinition Height="32" />
                         </Grid.RowDefinitions>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="132" />
@@ -365,7 +369,7 @@
                                       VerticalAlignment="Center" />
                         </StackPanel>
                     </Grid>
-                    <Border Grid.Row="7" BorderBrush="#E2E8F0" BorderThickness="0,1,0,0" Padding="0,12,0,8">
+                    <Border Grid.Column="2" Grid.Row="1" Grid.RowSpan="6" BorderBrush="#E2E8F0" BorderThickness="1,0,0,0" Padding="12,0,0,0">
                         <StackPanel>
                             <TextBlock x:Name="DailySectionText" Text="每日临时会话" FontWeight="SemiBold" Foreground="#0E7490" />
                             <CheckBox x:Name="DailyEnabledBox" Content="启用每日定时" Margin="0,12,0,10" Foreground="#334155" />
