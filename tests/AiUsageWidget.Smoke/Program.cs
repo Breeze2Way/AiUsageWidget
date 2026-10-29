@@ -114,17 +114,21 @@ if (args.Length == 2 && args[0] == "--live-schedule")
     throw new TimeoutException("Scheduled smoke did not complete; inspect owned history, never guess-delete.");
 }
 
-if (args.Length != 2 || args[0] != "--live-create-send-delete")
+if (args.Length != 2 || args[0] is not ("--live-create-send-delete" or "--live-codex-candidate"))
 {
     Console.Error.WriteLine("Requires --live-create-send-delete <ownership-json-path>; sends real requests and deletes only test-created IDs.");
     return 2;
 }
 var owned = new List<ConversationRun>();
-using var codex = new CodexConversationAdapter();
+// Candidate mode bypasses only the version guard for an explicit compatibility test.
+using var codex = args[0] == "--live-codex-candidate"
+    ? new CodexConversationAdapter(new CodexProcessRpc(), _ => Task.CompletedTask)
+    : new CodexConversationAdapter();
 using var antig = new AntigravityConversationAdapter();
+IConversationAdapter[] selectedAdapters = args[0] == "--live-codex-candidate" ? [codex] : [codex, antig];
 using var cancellation = new CancellationTokenSource(TimeSpan.FromMinutes(5));
 var token = cancellation.Token;
-foreach (var adapter in new IConversationAdapter[] { codex, antig })
+foreach (var adapter in selectedAdapters)
 {
     var runId = Guid.NewGuid();
     await adapter.EnsureReadyAsync(token);
@@ -139,7 +143,7 @@ foreach (var adapter in new IConversationAdapter[] { codex, antig })
     Console.WriteLine($"SENT {adapter.App}");
 }
 await Task.Delay(TimeSpan.FromSeconds(61), token);
-foreach (var adapter in new IConversationAdapter[] { codex, antig })
+foreach (var adapter in selectedAdapters)
 {
     var run = owned.Single(r => r.App == adapter.App);
     if (!await adapter.CanSafelyDeleteAsync(run.Conversation!, token)) throw new InvalidOperationException($"{adapter.App}: preserve because ownership/content could not be confirmed.");

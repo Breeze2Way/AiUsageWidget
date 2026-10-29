@@ -9,7 +9,7 @@ public sealed class ConversationCompatibilityGuard(
     public async Task EnsureReadyAsync(ConversationApp app, CancellationToken ct)
     {
         var version = (await readVersion(app, ct).ConfigureAwait(false)).Trim();
-        var verified = app == ConversationApp.Codex ? version == "0.163.0-alpha.10.2" : version is "2.27.0" or "2.27.0.0";
+        var verified = app == ConversationApp.Codex ? version is "0.163.0-alpha.10.2" or "0.165.0-alpha.1.2" : version is "2.27.0" or "2.27.0.0";
         if (!verified) throw new NotSupportedException("This app version has not been verified for safe conversation cleanup.");
         await start(app, ct).ConfigureAwait(false);
     }
