@@ -8,7 +8,7 @@ public sealed class AntigravityConversationAdapter : IConversationAdapter, IDisp
     private readonly IConversationRpc rpc;
     private readonly Func<CancellationToken, Task> ready;
     public ConversationApp App => ConversationApp.Antigravity;
-    public AntigravityConversationAdapter() : this(new AntigravityConversationRpc(), ct => ConversationCompatibilityGuard.EnsureInstalledReadyAsync(ConversationApp.Antigravity, ct)) { }
+    public AntigravityConversationAdapter() : this(new AntigravityConversationRpc(), ct => DesktopAppLauncher.EnsureStartedAsync(ConversationApp.Antigravity, ct)) { }
     public AntigravityConversationAdapter(IConversationRpc rpc, Func<CancellationToken, Task> ready) { this.rpc = rpc; this.ready = ready; }
     public async Task EnsureReadyAsync(CancellationToken ct)
     {

@@ -114,18 +114,21 @@ if (args.Length == 2 && args[0] == "--live-schedule")
     throw new TimeoutException("Scheduled smoke did not complete; inspect owned history, never guess-delete.");
 }
 
-if (args.Length != 2 || args[0] is not ("--live-create-send-delete" or "--live-codex-candidate"))
+if (args.Length != 2 || args[0] is not ("--live-create-send-delete" or "--live-codex-candidate" or "--live-antigravity"))
 {
     Console.Error.WriteLine("Requires --live-create-send-delete <ownership-json-path>; sends real requests and deletes only test-created IDs.");
     return 2;
 }
 var owned = new List<ConversationRun>();
-// Candidate mode bypasses only the version guard for an explicit compatibility test.
-using var codex = args[0] == "--live-codex-candidate"
-    ? new CodexConversationAdapter(new CodexProcessRpc(), _ => Task.CompletedTask)
-    : new CodexConversationAdapter();
+// Candidate mode runs only Codex through the normal startup path.
+using var codex = new CodexConversationAdapter();
 using var antig = new AntigravityConversationAdapter();
-IConversationAdapter[] selectedAdapters = args[0] == "--live-codex-candidate" ? [codex] : [codex, antig];
+IConversationAdapter[] selectedAdapters = args[0] switch
+{
+    "--live-codex-candidate" => [codex],
+    "--live-antigravity" => [antig],
+    _ => [codex, antig]
+};
 using var cancellation = new CancellationTokenSource(TimeSpan.FromMinutes(5));
 var token = cancellation.Token;
 foreach (var adapter in selectedAdapters)

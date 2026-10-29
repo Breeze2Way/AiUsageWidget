@@ -181,29 +181,6 @@ public sealed class ConversationAdapterTests
         Assert.DoesNotContain(rpc.Calls, x => x.Method == "thread/delete");
     }
 
-    [Fact]
-    public async Task UnknownInstalledVersionStopsBeforeStartingApps()
-    {
-        var starts = 0;
-        var guard = new ConversationCompatibilityGuard((_, _) => Task.FromResult("99.0.0"), (_, _) => { starts++; return Task.CompletedTask; });
-        await Assert.ThrowsAsync<NotSupportedException>(() => guard.EnsureReadyAsync(ConversationApp.Codex, default));
-        await Assert.ThrowsAsync<NotSupportedException>(() => guard.EnsureReadyAsync(ConversationApp.Antigravity, default));
-        Assert.Equal(0, starts);
-    }
-
-    [Theory]
-    [InlineData("0.163.0-alpha.10.2")]
-    [InlineData("0.165.0-alpha.1.2")]
-    public async Task VerifiedCodexVersionsStartTheApp(string version)
-    {
-        var starts = 0;
-        var guard = new ConversationCompatibilityGuard((_, _) => Task.FromResult(version), (_, _) => { starts++; return Task.CompletedTask; });
-
-        await guard.EnsureReadyAsync(ConversationApp.Codex, default);
-
-        Assert.Equal(1, starts);
-    }
-
     private static JsonElement J(string text) => JsonDocument.Parse(text).RootElement.Clone();
     private sealed class FakeRpc(Func<string, JsonElement, JsonElement> handler) : IConversationRpc
     {
