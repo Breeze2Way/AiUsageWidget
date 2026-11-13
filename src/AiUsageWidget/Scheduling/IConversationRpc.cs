@@ -15,5 +15,6 @@ public sealed class ConversationRpcException(string code, string remoteMessage) 
     public bool IsNotFound => Code is "unknown" or "not_found" or "-32600" or "-32000" &&
         (remoteMessage.StartsWith("thread not found", StringComparison.OrdinalIgnoreCase) ||
          remoteMessage.StartsWith("trajectory not found", StringComparison.OrdinalIgnoreCase) ||
+         (Code == "not_found" && remoteMessage.StartsWith("not_found: trajectory not found:", StringComparison.OrdinalIgnoreCase)) ||
          remoteMessage.StartsWith("no rollout found for thread id", StringComparison.OrdinalIgnoreCase));
 }

@@ -116,6 +116,13 @@ public sealed class ConversationAdapterTests
     public void MissingMethodOrAuthIsNotAnAbsentConversation(string code, string message) =>
         Assert.False(new ConversationRpcException(code, message).IsNotFound);
 
+    [Fact]
+    public void AntigravityPrefixedMissingTrajectoryIsRecognized()
+    {
+        var error = new ConversationRpcException("not_found", "not_found: trajectory not found: not found (error ID: example)");
+        Assert.True(error.IsNotFound);
+    }
+
     [Theory]
     [InlineData("thread/items/list")]
     [InlineData("thread/turns/list")]
